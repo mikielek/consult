@@ -43,4 +43,4 @@ ln -s "$PWD/.agents/skills/consult" ~/.codex/skills/consult
   `chmod +x scripts/consult.sh` or invoke it as `bash scripts/consult.sh ...`.
 - **Backend CLIs**: each backend needs its CLI installed and authenticated (`gemini`, `opencode`,
   `claude`, `codex`, `pi`). Add a backend by dropping `scripts/backends/<name>.sh`; remove one by
-  deleting the file.
+  deleting the file. See `references/backend-adapters.md` for the full adapter-authoring guide.

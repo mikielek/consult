@@ -51,6 +51,9 @@ the actual CLI where practical and include version/date notes.
 
 ## Maintenance Hints
 
+To add or remove a backend adapter, see
+`.agents/skills/consult/references/backend-adapters.md`.
+
 Backend tools change: CLI flags, exposed capabilities, auth flows, output formats, and session
 behavior can drift. When modifying an adapter, check the current CLI help and verify what is
 possible, especially where a tool previously fell short.
@@ -62,8 +65,17 @@ discovery hardening.
 
 ## Commit & Pull Request Guidelines
 
-Current history uses concise, imperative-style commit subjects, such as `Initial consult skill` and
-`Clarify skill-first README usage`. Keep commits focused.
+Author commits with the full name `Michał Kiełkowski` and no email address. The author and
+committer fields use an empty email, which renders as `Michał Kiełkowski <>` in the log:
+
+```bash
+GIT_AUTHOR_NAME="Michał Kiełkowski" GIT_AUTHOR_EMAIL="" \
+GIT_COMMITTER_NAME="Michał Kiełkowski" GIT_COMMITTER_EMAIL="" \
+  git commit -m "Your subject"
+```
+
+Use concise, imperative commit subjects (for example `Initial commit` or `Add pi backend`), with an
+optional body when the change needs explanation. Keep commits focused.
 
 Pull requests should describe the backend or workflow affected, list validation commands run, and
 call out any security or read-only behavior changes. Link issues when applicable.

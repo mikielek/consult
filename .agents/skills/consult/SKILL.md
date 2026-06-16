@@ -92,24 +92,16 @@ Match the deliverable to the kind of consultation:
 - Note a persistent session id in your working notes when later rounds will need it. If the task
   changes materially, start a new session or ask whether to continue.
 
-## Adding or removing a backend
-
-- **Add**: drop a `scripts/backends/<name>.sh` adapter (copy an existing one). It sources
-  `scripts/lib/common.sh`, which parses the normalized flags and builds the prompt; the adapter only
-  translates them into its CLI and enforces read-only defaults. It is picked up immediately.
-- **Remove**: delete that file. No other edits needed.
-
 ## Permissions and safety
 
-Consultations are read-only by default, but the strength differs by backend: **Codex is
-OS-sandbox-enforced** read-only (`-s read-only -a never`), **Gemini, OpenCode, and Claude are
-approval-gated** (`--approval-mode plan` / `--agent plan` / `--permission-mode plan` — no edits
-without approval, which is unavailable headless, so effectively read-only but not a hard sandbox),
-and **Pi is tool-allowlist/discovery-hardened** (`--tools read,grep,ls` plus disabled extension,
-skill, template, theme, context-file, and project-trust discovery, excluding edit/write/bash and
-discovered extension/custom tools). Safety is also structural: the adapters accept only the
-documented normalized flags (no `--` passthrough), so callers can't inject permission- or
-capability-shaping flags, and commands are built as argv arrays with no shell eval.
+Consultations are read-only by default; the strength varies by backend: **Codex** is
+OS-sandbox-enforced, **Gemini, OpenCode, and Claude** are approval/plan-gated (effectively
+read-only headless, not a hard sandbox), and **Pi** is tool-allowlist/discovery-hardened (not an OS
+sandbox). Per-backend safety mechanisms are detailed in `references/<backend>-cli.md`.
+
+Safety is also structural: the adapters accept only the documented normalized flags (no `--`
+passthrough), so callers can't inject permission- or capability-shaping flags, and commands are
+built as argv arrays with no shell eval.
 
 All backends can still read accessible project files and return their contents. Avoid sending
 secrets or unnecessary proprietary data to a third-party agent; summarize sensitive context or ask

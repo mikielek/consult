@@ -36,7 +36,9 @@ Use `opencode run --agent plan` for consultation by default (the adapter does th
 explicitly read-only, and never pass `--dangerously-skip-permissions` (the adapter rejects it).
 
 For strict read-only behavior, configure an OpenCode agent whose permissions deny `edit` and risky
-`bash`, then pass it through with `-- --agent <name>`.
+`bash`. The consult adapter always uses `--agent plan` and supports no passthrough, so selecting a
+different agent means editing `scripts/backends/opencode.sh` (or invoking `opencode` directly) —
+not a consult flag.
 
 ## Testing Without Provider Auth
 
