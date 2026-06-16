@@ -33,15 +33,15 @@ An adapter:
    require_prompt
    ```
    `parse_common_args` populates these globals: `PROMPT JSON RESUME SESSION_ID MODEL FROM DRY_RUN
-   RAW FILES[]`. There is **deliberately no `--`/passthrough** — only the documented normalized
-   flags reach the backend CLI, so callers cannot inject permission- or capability-shaping flags.
+   RAW ALLOW_SECRETS`. There is **deliberately no `--`/passthrough** — only the documented
+   normalized flags reach the backend CLI, so callers cannot inject permission- or
+   capability-shaping flags.
 3. Builds the prompt via `prompt="$(compose_prompt "<DisplayName>")"` (capitalized display name,
    e.g. `"Claude"`, `"Pi"`). This prepends the neutral advisory reviewer framing unless `--raw`.
 4. Translates the globals into the backend's CLI as an **argv array** (no shell `eval`), enforcing
    mutation-restricted defaults appropriate to that CLI (OS sandbox, plan/approval mode, or a tool
-   allowlist — see the per-backend `references/<name>-cli.md`). Reject flags the backend can't
-   honor (e.g. `die` if both `--resume` and `--session-id` are given, or if `--file` is
-   unsupported).
+   allowlist — see the per-backend `references/<name>-cli.md`). Reject flag combinations the
+   backend can't honor, such as conflicting `--resume` and `--session-id` values.
 5. Hands the command to `run_or_print "${cmd[@]}"`, which prints it under `--dry-run` or `exec`s it
    with stdin closed (`</dev/null`) to stay non-interactive. `cmd[0]` must be the backend's base
    binary (not a wrapper like `npx`) so the `command -v` install check is accurate.
@@ -56,5 +56,5 @@ in a `references/<name>-cli.md`.
   over branching in `consult.sh`.
 - Verify behavior with at least one `scripts/consult.sh --to <name> --dry-run "..."` (and the live
   CLI where practical) before documenting flags in `references/<name>-cli.md`.
-- Run `.agents/skills/consult/tests/wrapper.sh` after parser, safety-default, file, session, JSON,
-  or prompt-framing changes. It uses fake backend binaries and should not call a model.
+- Run `.agents/skills/consult/tests/wrapper.sh` after parser, safety-default, session, JSON, or
+  prompt-framing changes. It uses fake backend binaries and should not call a model.

@@ -88,8 +88,10 @@ Retrospective notes from the trigger/safety tightening work:
 - `--resume` and `--session-id` conflicts live in adapters because backend support differs. Codex and
   OpenCode reject caller-provided session ids; Gemini, Claude, and Pi support them but not together
   with resume.
-- `--file` is backend-specific. Gemini, Codex, and Claude reject it; OpenCode forwards `--file`;
-  Pi maps it to `@path`, which Pi reads while constructing the prompt and outside the tool allowlist.
+- `--file` was intentionally removed from the normalized consult interface. It was a leaky
+  backend-specific abstraction: some adapters rejected it, OpenCode forwarded it, and Pi's old
+  `@path` mapping read files while constructing the prompt outside the tool allowlist. Ask callers
+  to mention paths in the prompt instead.
 - Pi consult `--json` is intentionally unsupported because Pi JSON mode emits verbose JSONL
   tool/thinking events while plain `pi -p` prints the final response. Do not re-add `--mode json`
   unless a caller is prepared to consume that event stream.
@@ -97,8 +99,8 @@ Retrospective notes from the trigger/safety tightening work:
   with `-` or `@`; test those exact forms because a positional `-...` prompt fails earlier in common
   parsing.
 - The prompt secret preflight is intentionally narrow: scan only the normalized `PROMPT` payload,
-  run before dry-run can print the backend command, and do not scan `--file` contents or repository
-  files. `--allow-secrets` is the explicit escape hatch.
+  run before dry-run can print the backend command, and do not scan repository files.
+  `--allow-secrets` is the explicit escape hatch.
 - The consult wrapper is non-interactive by design. Do not document or suggest focusing a terminal,
   pressing tab, or entering input into a running consult command.
 - Trusted-path guidance for untrusted repositories is documentation for callers and host agents, not

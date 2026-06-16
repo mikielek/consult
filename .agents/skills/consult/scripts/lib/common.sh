@@ -4,7 +4,7 @@
 # source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../lib/common.sh"
 #
 # parse_common_args "$@" populates these globals:
-#   PROMPT JSON RESUME SESSION_ID MODEL FROM DRY_RUN RAW ALLOW_SECRETS FILES[]
+#   PROMPT JSON RESUME SESSION_ID MODEL FROM DRY_RUN RAW ALLOW_SECRETS
 # One non-flag positional argument may be used as PROMPT; use --prompt when
 # the prompt begins with '-'.
 #
@@ -26,7 +26,6 @@ parse_common_args() {
   DRY_RUN=0
   RAW=0
   ALLOW_SECRETS=0
-  FILES=()
 
   while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -35,7 +34,6 @@ parse_common_args() {
       -r|--resume)     need_value "$1" $#; RESUME="$2"; shift 2 ;;
       --session-id)    need_value "$1" $#; SESSION_ID="$2"; shift 2 ;;
       -m|--model)      need_value "$1" $#; MODEL="$2"; shift 2 ;;
-      -f|--file)       need_value "$1" $#; FILES+=("$2"); shift 2 ;;
       --from)          need_value "$1" $#; FROM="$2"; shift 2 ;;
       --dry-run)       DRY_RUN=1; shift ;;
       --raw)           RAW=1; shift ;;

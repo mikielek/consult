@@ -97,7 +97,7 @@
       "id": "output_safe_command_usage",
       "input": "Consult Pi about this design and include README.md as context.",
       "checks": [
-        "Uses normalized consult flags only, such as --to pi and --file README.md.",
+        "Uses normalized consult flags only, such as --to pi, and mentions README.md in the prompt instead of using --file.",
         "Does not use a raw -- passthrough or direct backend capability flags.",
         "Avoids --raw unless the prompt truly needs to bypass reviewer framing.",
         "Accounts for Pi-specific caveats, including no consult --json support and raw prompt guards."

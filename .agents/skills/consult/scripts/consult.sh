@@ -29,7 +29,6 @@ Normalized options (a backend may not support all of them):
   -r, --resume VALUE  Continue a prior session ("latest" or a session id).
       --session-id ID Start a session with an explicit id (backend permitting).
   -m, --model MODEL   Use a specific model.
-  -f, --file PATH     Attach a file (backend permitting; may repeat).
       --raw           Send --prompt verbatim, skipping the reviewer framing.
       --allow-secrets Bypass the prompt secret preflight after explicit review.
       --dry-run       Print the resolved backend command without running it.
@@ -96,7 +95,7 @@ while [[ $# -gt 0 ]]; do
       forward+=("$1")
       shift
       ;;
-    -p|--prompt|--from|-r|--resume|--session-id|-m|--model|-f|--file)
+    -p|--prompt|--from|-r|--resume|--session-id|-m|--model)
       forwarding=1
       if [[ $# -ge 2 ]]; then
         forward+=("$1" "$2")

@@ -15,7 +15,6 @@ parse_common_args "$@"
 require_prompt
 
 [[ -z "$SESSION_ID" ]] || die "codex assigns its own session id; use --resume latest or --resume <id>"
-[[ ${#FILES[@]} -eq 0 ]] || die "codex backend does not support --file; reference the path in --prompt and Codex will read it in its read-only sandbox"
 
 prompt="$(compose_prompt "Codex")"
 

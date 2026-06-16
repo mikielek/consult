@@ -38,6 +38,4 @@ gemini's `--output-format json`). Consumers must read it line by line / as a str
 
 ## Caveats
 
-- No `--file`: Codex attaches images via its own flags and reads other files itself inside the
-  read-only sandbox, so the adapter rejects `--file`; reference the path in `--prompt`.
 - Web/search is left at the CLI default (the adapter does not pass `--search`, which is off by default).

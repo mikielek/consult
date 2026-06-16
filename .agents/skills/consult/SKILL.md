@@ -59,14 +59,14 @@ backend-specific, and Pi intentionally rejects consult `--json`:
 ```
 
 The prompt may be passed with `--prompt` or as one positional argument. Use `--prompt` when the text
-starts with `-`. Use `--from`, `--model`, `--file` (backend permitting), or `--raw` only when needed.
-There is no `--`/passthrough; only documented normalized flags are accepted. See
-`<skill-dir>/scripts/consult.sh --help`.
+starts with `-`. Use `--from`, `--model`, or `--raw` only when needed. There is no
+`--`/passthrough; only documented normalized flags are accepted. See
+`<skill-dir>/scripts/consult.sh --help`. When file context is needed, mention the path directly in
+the prompt, for example `Review README.md and src/client.ts`.
 
 The wrapper scans the prompt text for a small set of obvious secret patterns before running or
 printing a backend command. It aborts on a match unless `--allow-secrets` is supplied. This preflight
-does not scan files passed with `--file`, repository contents the backend can read, or any data a
-backend loads itself.
+does not scan repository contents the backend can read or any data a backend loads itself.
 
 ## What to ask for
 

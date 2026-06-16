@@ -6,7 +6,7 @@ set -euo pipefail
 #   pi -p --tools read,grep,ls --no-extensions --no-skills
 #      --no-prompt-templates --no-themes --no-context-files --no-approve
 #      [--no-session] [--model M]
-#      [--continue | --session ID] [--session-id ID] [@file...] PROMPT
+#      [--continue | --session ID] [--session-id ID] PROMPT
 # Mutation is restricted by a Pi tool allowlist: no edit/write/bash tools and no
 # discovered extension/custom tools. See ../../references/pi-cli.md for observed behavior.
 
@@ -46,11 +46,6 @@ if [[ -n "$RESUME" ]]; then
 fi
 [[ -n "$SESSION_ID" ]] && cmd+=(--session-id "$SESSION_ID")
 [[ -z "$RESUME" && -z "$SESSION_ID" ]] && cmd+=(--no-session)
-
-file=""
-for file in "${FILES[@]+"${FILES[@]}"}"; do
-  cmd+=("@$file")
-done
 
 cmd+=("$prompt")
 

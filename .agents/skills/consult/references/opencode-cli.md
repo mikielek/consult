@@ -21,7 +21,8 @@ Observed in a workspace on 2026-06-12. Also checked official OpenCode docs dated
 - `opencode session list` lists sessions, and `opencode export [sessionID]` exports session data.
 
 Adapter mapping: `--resume latest` → `--continue`; `--resume <id>` → `--session <id>`;
-`--json` → `--format json`; the prompt is passed positionally last.
+`--json` → `--format json`; the prompt is passed positionally last. Consult does not expose
+OpenCode file attachment flags; mention file paths directly in the prompt instead.
 
 ## Plan Agent and Permissions
 

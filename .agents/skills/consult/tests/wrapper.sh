@@ -158,6 +158,10 @@ test_unknown_flag_rejected() {
   run_case --to gemini --dry-run --bogus --help
   assert_status 2
   assert_stderr_contains "unknown flag '--bogus'"
+
+  run_case --to opencode --dry-run --file README.md "Review API"
+  assert_status 2
+  assert_stderr_contains "unknown flag '--file'"
 }
 
 test_invalid_backend_rejected() {
@@ -179,23 +183,6 @@ test_resume_session_conflicts() {
     assert_status 2
     assert_stderr_contains "use either --resume or --session-id"
   done
-}
-
-test_file_support_boundaries() {
-  local backend
-  for backend in gemini codex claude; do
-    run_case --to "$backend" --dry-run --file README.md "Review API"
-    assert_status 2
-    assert_stderr_contains "does not support --file"
-  done
-
-  run_case --to opencode --dry-run --file README.md "Review API"
-  assert_status 0
-  assert_stdout_contains "--file README.md"
-
-  run_case --to pi --dry-run --file README.md "Review API"
-  assert_status 0
-  assert_stdout_contains "@README.md"
 }
 
 test_pi_raw_prompt_guards() {
@@ -249,7 +236,6 @@ run_test "unknown normalized flags are rejected" test_unknown_flag_rejected
 run_test "invalid backend names are rejected" test_invalid_backend_rejected
 run_test "unknown backend names are rejected" test_unknown_backend_rejected
 run_test "resume and session-id conflicts fail where both exist" test_resume_session_conflicts
-run_test "file attachment support boundaries are explicit" test_file_support_boundaries
 run_test "pi raw prompts cannot begin with dash or at sign" test_pi_raw_prompt_guards
 run_test "pi rejects consult json mode" test_pi_json_rejected
 run_test "positional prompts work with dash caveat" test_positional_prompt_and_dash_caveat

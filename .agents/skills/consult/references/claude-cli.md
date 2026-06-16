@@ -25,9 +25,6 @@ claude -p --permission-mode plan [--output-format json] [--model M] \
 
 ## Caveats
 
-- No local-file attach: Claude's `--file` is `file_id:relative_path` (resource download), **not** a
-  local attach, so the adapter rejects `--file`. Reference the path in `--prompt`; Claude reads it
-  with its own tools in plan mode.
 - `claude -p` skips the workspace-trust dialog — only consult inside directories you trust.
 - Web/search tools are left at the CLI default (not restricted).
 - Plan-mode output may also be saved as a local Claude plan under `~/.claude/plans/`. If an

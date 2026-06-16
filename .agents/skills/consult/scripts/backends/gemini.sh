@@ -13,7 +13,6 @@ parse_common_args "$@"
 require_prompt
 
 [[ -n "$RESUME" && -n "$SESSION_ID" ]] && die "use either --resume or --session-id, not both"
-[[ ${#FILES[@]} -eq 0 ]] || die "gemini backend does not support --file"
 
 prompt="$(compose_prompt "Gemini")"
 

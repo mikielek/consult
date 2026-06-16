@@ -11,7 +11,7 @@ pi -p --tools read,grep,ls --no-extensions --no-skills \
    --no-prompt-templates --no-themes --no-context-files --no-approve \
    [--model M] \
    [--continue | --session ID] [--session-id ID] [--no-session] \
-   [@file...] "PROMPT"
+   "PROMPT"
 ```
 
 `--no-session` is appended only when neither `--resume` nor `--session-id` is given (one-shot
@@ -36,17 +36,10 @@ calls); flag order is otherwise irrelevant to Pi's parser.
 - `--resume <id>` -> `--session <id>` (specific session file or partial UUID).
 - `--session-id <id>` -> `--session-id <id>` (exact project session id, created if missing).
 - One-shot calls use `--no-session` when neither `--resume` nor `--session-id` is supplied, so
-  prompt and attached file contents are not persisted in Pi's session store by default.
+  prompt contents are not persisted in Pi's session store by default.
 - The adapter deliberately avoids Pi's `--resume`/`-r` because it opens an interactive session
   picker, which is unsafe for headless consult runs.
 - `--resume` and `--session-id` are mutually exclusive in the adapter.
-
-## Files
-
-Pi includes files with `@path` arguments, so the adapter maps each consult `--file PATH` to
-`@PATH` and places those arguments before the prompt. Pi reads these paths locally while constructing
-the initial message, outside the `--tools` allowlist. Any file readable by the Pi process can be
-included this way, regardless of project boundaries.
 
 ## Read-only model
 
@@ -55,8 +48,8 @@ Pi's own docs describe read-only review with a tool allowlist such as
 the narrower `read,grep,ls` allowlist plus discovery-disabling flags. This removes known mutation
 paths, including shell access and discovered extension/custom tools (the `--tools` allowlist
 applies across all tool sources, so any MCP-provided tools are excluded too), but it is not an OS sandbox:
-Pi can still read any file visible to the process through `@path`, `read`, `grep`, or `ls` and
-return its contents.
+Pi can still read any file visible to the process through `read`, `grep`, or `ls` and return its
+contents.
 
 ## Caveats
 

@@ -4,7 +4,7 @@ set -euo pipefail
 
 # Backend adapter: OpenCode CLI. Translates the normalized consult interface into
 #   opencode run --agent plan [--format json] [--continue|--session ID]
-#                [--model M] [--file PATH]... PROMPT
+#                [--model M] PROMPT
 # Defaults to the approval-gated `plan` agent (no edits without approval, which is
 # unavailable headless). See ../../references/opencode-cli.md for observed behavior.
 
@@ -27,11 +27,6 @@ if [[ -n "$RESUME" ]]; then
   fi
 fi
 [[ -n "$MODEL" ]] && cmd+=(--model "$MODEL")
-
-file=""
-for file in "${FILES[@]+"${FILES[@]}"}"; do
-  cmd+=(--file "$file")
-done
 
 cmd+=("$prompt")
 
