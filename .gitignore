@@ -1,0 +1,41 @@
+# OS/editor noise
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Logs and runtime output
+*.log
+logs/
+tmp/
+temp/
+
+# Common dependency/build caches
+node_modules/
+.npm/
+.pnpm-store/
+dist/
+build/
+coverage/
+.cache/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Local agent install/symlink locations. The canonical committed skill lives in
+# .agents/skills/consult; these directories are user/workspace-specific mirrors.
+.claude/
+.codex/
+.cursor/
+.gemini/
+
