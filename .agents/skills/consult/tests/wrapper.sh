@@ -71,6 +71,16 @@ assert_stderr_contains() {
   [[ "$LAST_STDERR" == *"$expected"* ]] || fail "stderr did not contain: $expected"
 }
 
+assert_stdout_not_contains() {
+  local unexpected="$1"
+  [[ "$LAST_STDOUT" != *"$unexpected"* ]] || fail "stdout contained unexpected text: $unexpected"
+}
+
+assert_stderr_not_contains() {
+  local unexpected="$1"
+  [[ "$LAST_STDERR" != *"$unexpected"* ]] || fail "stderr contained unexpected text: $unexpected"
+}
+
 run_test() {
   CURRENT_TEST="$1"
   shift
@@ -124,6 +134,20 @@ test_passthrough_rejected() {
   run_case --to gemini --dry-run -- "Review API"
   assert_status 2
   assert_stderr_contains "passthrough is not supported"
+}
+
+test_prompt_secret_preflight() {
+  local fake_secret="sk-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+
+  run_case --to gemini --dry-run --prompt "Review token $fake_secret"
+  assert_status 2
+  assert_stderr_contains "ABORTED. Potential secret detected in prompt."
+  assert_stdout_not_contains "$fake_secret"
+  assert_stderr_not_contains "$fake_secret"
+
+  run_case --to gemini --dry-run --allow-secrets --prompt "Review token $fake_secret"
+  assert_status 0
+  assert_stdout_contains "$fake_secret"
 }
 
 test_unknown_flag_rejected() {
@@ -220,6 +244,7 @@ run_test "claude dry-run uses plan permission defaults" test_claude_defaults
 run_test "opencode dry-run uses plan agent defaults" test_opencode_defaults
 run_test "pi dry-run uses tool allowlist and discovery hardening" test_pi_defaults
 run_test "raw backend passthrough is rejected" test_passthrough_rejected
+run_test "prompt secret preflight blocks obvious secrets" test_prompt_secret_preflight
 run_test "unknown normalized flags are rejected" test_unknown_flag_rejected
 run_test "invalid backend names are rejected" test_invalid_backend_rejected
 run_test "unknown backend names are rejected" test_unknown_backend_rejected

@@ -32,8 +32,30 @@ cp -r .agents/skills/consult .claude/skills/consult
 Personal/global (all repos for that agent) — use absolute paths here:
 
 ```bash
+mkdir -p ~/.agents/skills
+ln -s "$PWD/.agents/skills/consult" ~/.agents/skills/consult
 ln -s "$PWD/.agents/skills/consult" ~/.claude/skills/consult
 ln -s "$PWD/.agents/skills/consult" ~/.codex/skills/consult
+```
+
+## Security and trust boundaries
+
+Project-scoped installs are convenient for trusted repositories, but do not execute
+`.agents/skills/consult/scripts/consult.sh` from an untrusted checkout. The repository controls that
+local script and its adapters.
+
+For untrusted repository review, install `consult` once from a trusted source and invoke that copy by
+absolute path while keeping the working directory at the repository being reviewed:
+
+```bash
+~/.agents/skills/consult/scripts/consult.sh --to gemini --prompt "Review this repository"
+```
+
+Autonomous agents can use an environment variable to make this preference explicit:
+
+```bash
+export CONSULT_TRUSTED_PATH="$HOME/.agents/skills/consult/scripts/consult.sh"
+"$CONSULT_TRUSTED_PATH" --to gemini --prompt "Review this repository"
 ```
 
 ## Notes

@@ -96,6 +96,14 @@ Retrospective notes from the trigger/safety tightening work:
 - Pi has no safe `--` end-of-options delimiter. The adapter rejects `--raw --prompt` values starting
   with `-` or `@`; test those exact forms because a positional `-...` prompt fails earlier in common
   parsing.
+- The prompt secret preflight is intentionally narrow: scan only the normalized `PROMPT` payload,
+  run before dry-run can print the backend command, and do not scan `--file` contents or repository
+  files. `--allow-secrets` is the explicit escape hatch.
+- The consult wrapper is non-interactive by design. Do not document or suggest focusing a terminal,
+  pressing tab, or entering input into a running consult command.
+- Trusted-path guidance for untrusted repositories is documentation for callers and host agents, not
+  a guarantee a repo-local script can enforce. Prefer a known absolute path such as
+  `CONSULT_TRUSTED_PATH` when reviewing untrusted code.
 - `evals/evals.json` is an artifact, not an executable harness. Keep deterministic wrapper behavior
   in `.agents/skills/consult/tests/wrapper.sh`; use the eval JSON for host/model trigger and output
   quality checks.

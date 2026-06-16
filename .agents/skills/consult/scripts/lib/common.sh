@@ -4,7 +4,7 @@
 # source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../lib/common.sh"
 #
 # parse_common_args "$@" populates these globals:
-#   PROMPT JSON RESUME SESSION_ID MODEL FROM DRY_RUN RAW FILES[]
+#   PROMPT JSON RESUME SESSION_ID MODEL FROM DRY_RUN RAW ALLOW_SECRETS FILES[]
 # One non-flag positional argument may be used as PROMPT; use --prompt when
 # the prompt begins with '-'.
 #
@@ -25,6 +25,7 @@ parse_common_args() {
   FROM="a coding agent"
   DRY_RUN=0
   RAW=0
+  ALLOW_SECRETS=0
   FILES=()
 
   while [[ $# -gt 0 ]]; do
@@ -38,6 +39,7 @@ parse_common_args() {
       --from)          need_value "$1" $#; FROM="$2"; shift 2 ;;
       --dry-run)       DRY_RUN=1; shift ;;
       --raw)           RAW=1; shift ;;
+      --allow-secrets) ALLOW_SECRETS=1; shift ;;
       --) die "passthrough is not supported; only the documented consult flags are allowed" ;;
       -*) die "unknown flag '$1'" ;;
       *)  if [[ -z "$PROMPT" ]]; then PROMPT="$1"; shift; else die "unexpected argument '$1'"; fi ;;
@@ -45,8 +47,19 @@ parse_common_args() {
   done
 }
 
+scan_for_secrets() {
+  local payload="$1"
+  local pattern='(sk-[A-Za-z0-9_-]{32,}|AKIA[0-9A-Z]{16}|ASIA[0-9A-Z]{16}|gh[pousr]_[A-Za-z0-9_]{36,}|github_pat_[A-Za-z0-9_]{20,}|xox[baprs]-[A-Za-z0-9-]{20,}|AIza[0-9A-Za-z_-]{35}|-----BEGIN (RSA |DSA |EC |OPENSSH )?PRIVATE KEY-----)'
+
+  [[ -n "$payload" ]] || return 0
+  if LC_ALL=C grep -Eq "$pattern" <<<"$payload"; then
+    die "ABORTED. Potential secret detected in prompt. Re-run with --allow-secrets only if you intentionally want to send this prompt."
+  fi
+}
+
 require_prompt() {
   [[ -n "$PROMPT" ]] || die "a prompt is required (use --prompt TEXT or one positional prompt)"
+  [[ "$ALLOW_SECRETS" -eq 1 ]] || scan_for_secrets "$PROMPT"
 }
 
 # compose_prompt CALLEE -> echoes the prompt to send.

@@ -28,6 +28,14 @@ backend:
 `--list` shows available adapters and whether their CLIs are on `PATH`. "Installed" does not imply
 authenticated; the CLIs reuse the user's existing auth and need network access.
 
+## Trust boundary
+
+When reviewing an untrusted repository, do not execute that repository's project-local
+`.agents/skills/consult/scripts/consult.sh`. A repo can change its local wrapper or adapters.
+Use a trusted personal/global install by absolute path instead, for example
+`~/.agents/skills/consult/scripts/consult.sh`. If the host environment provides
+`CONSULT_TRUSTED_PATH`, prefer that absolute path over a repo-local wrapper.
+
 ## Run a consultation
 
 Keep your shell at the **project root** so the backend sees the repo being discussed. Invoke the
@@ -54,6 +62,11 @@ The prompt may be passed with `--prompt` or as one positional argument. Use `--p
 starts with `-`. Use `--from`, `--model`, `--file` (backend permitting), or `--raw` only when needed.
 There is no `--`/passthrough; only documented normalized flags are accepted. See
 `<skill-dir>/scripts/consult.sh --help`.
+
+The wrapper scans the prompt text for a small set of obvious secret patterns before running or
+printing a backend command. It aborts on a match unless `--allow-secrets` is supplied. This preflight
+does not scan files passed with `--file`, repository contents the backend can read, or any data a
+backend loads itself.
 
 ## What to ask for
 
@@ -87,6 +100,9 @@ Match the deliverable to the kind of consultation:
 
 ## Permissions and safety
 
+> **Agent directive:** The consult wrapper is strictly non-interactive. Do not advise the user to
+> focus the terminal, press tab, or provide input to a running consult command.
+
 Consultations use mutation-restricted defaults; the strength varies by backend: **Codex** is
 OS-sandbox-enforced read-only, **Gemini, OpenCode, and Claude** are approval/plan-gated
 (effectively read-only headless, not a hard sandbox), and **Pi** is tool-allowlist and
@@ -99,7 +115,8 @@ built as argv arrays with no shell eval.
 
 All backends can still read accessible project files and return their contents. Mutation-restricted
 does not mean secrecy-preserving. Avoid sending secrets or unnecessary proprietary data to a
-third-party agent; summarize sensitive context or ask the user first.
+third-party agent; summarize sensitive context or ask the user first. The prompt secret preflight is
+a last-resort guard for obvious pasted credentials, not a general data-loss prevention mechanism.
 
 If your host sandboxes network or auth, run the wrapper outside that sandbox — the CLIs reuse the
 user's existing auth and need network access. **OpenAI Codex** users: see

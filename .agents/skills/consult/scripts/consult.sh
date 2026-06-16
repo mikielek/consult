@@ -31,6 +31,7 @@ Normalized options (a backend may not support all of them):
   -m, --model MODEL   Use a specific model.
   -f, --file PATH     Attach a file (backend permitting; may repeat).
       --raw           Send --prompt verbatim, skipping the reviewer framing.
+      --allow-secrets Bypass the prompt secret preflight after explicit review.
       --dry-run       Print the resolved backend command without running it.
   -h, --help          Show this help.
 
@@ -105,7 +106,7 @@ while [[ $# -gt 0 ]]; do
         shift
       fi
       ;;
-    --json|--raw|--dry-run)
+    --json|--raw|--allow-secrets|--dry-run)
       forwarding=1
       forward+=("$1")
       shift
