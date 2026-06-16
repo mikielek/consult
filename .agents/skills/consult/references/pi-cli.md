@@ -9,7 +9,7 @@ Observed in a workspace on 2026-06-16 with Pi `0.79.4`
 ```bash
 pi -p --tools read,grep,ls --no-extensions --no-skills \
    --no-prompt-templates --no-themes --no-context-files --no-approve \
-   [--mode json] [--model M] \
+   [--model M] \
    [--continue | --session ID] [--session-id ID] [--no-session] \
    [@file...] "PROMPT"
 ```
@@ -26,9 +26,9 @@ calls); flag order is otherwise irrelevant to Pi's parser.
   project-local trust loading for the consult run.
 - `--model` accepts model patterns or full provider-prefixed ids such as
   `anthropic/claude-...`; Pi's default provider is Google.
-- `--mode json` requests JSON output as JSONL event objects, not one JSON object. Parse it
-  line-by-line; for final assistant text, consume the last assistant `message_end` or `turn_end`
-  event after retries.
+- The consult `--json` option is intentionally unsupported for Pi. Pi's `--mode json` emits verbose
+  JSONL with intermediate tool/thinking events, while plain `pi -p` already filters that stream and
+  prints only the final response. Omit `--json` for normal Pi consults.
 
 ## Session persistence
 

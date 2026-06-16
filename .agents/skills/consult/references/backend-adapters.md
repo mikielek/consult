@@ -36,9 +36,9 @@ An adapter:
    RAW FILES[]`. There is **deliberately no `--`/passthrough** — only the documented normalized
    flags reach the backend CLI, so callers cannot inject permission- or capability-shaping flags.
 3. Builds the prompt via `prompt="$(compose_prompt "<DisplayName>")"` (capitalized display name,
-   e.g. `"Claude"`, `"Pi"`). This prepends the neutral read-only reviewer framing unless `--raw`.
+   e.g. `"Claude"`, `"Pi"`). This prepends the neutral advisory reviewer framing unless `--raw`.
 4. Translates the globals into the backend's CLI as an **argv array** (no shell `eval`), enforcing
-   a read-only default appropriate to that CLI (OS sandbox, plan/approval mode, or a tool
+   mutation-restricted defaults appropriate to that CLI (OS sandbox, plan/approval mode, or a tool
    allowlist — see the per-backend `references/<name>-cli.md`). Reject flags the backend can't
    honor (e.g. `die` if both `--resume` and `--session-id` are given, or if `--file` is
    unsupported).
@@ -56,3 +56,5 @@ in a `references/<name>-cli.md`.
   over branching in `consult.sh`.
 - Verify behavior with at least one `scripts/consult.sh --to <name> --dry-run "..."` (and the live
   CLI where practical) before documenting flags in `references/<name>-cli.md`.
+- Run `.agents/skills/consult/tests/wrapper.sh` after parser, safety-default, file, session, JSON,
+  or prompt-framing changes. It uses fake backend binaries and should not call a model.

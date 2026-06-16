@@ -1,9 +1,12 @@
 #!/usr/bin/env bash
 # Shared helpers for consult backend adapters.
-# Source this from a backend: source "$(dirname "${BASH_SOURCE[0]}")/../lib/common.sh"
+# Source this from a backend:
+# source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../lib/common.sh"
 #
 # parse_common_args "$@" populates these globals:
 #   PROMPT JSON RESUME SESSION_ID MODEL FROM DRY_RUN RAW FILES[]
+# One non-flag positional argument may be used as PROMPT; use --prompt when
+# the prompt begins with '-'.
 #
 # There is deliberately no raw passthrough: only validated normalized flags reach
 # the backend CLIs, so callers cannot inject capability-/permission-shaping flags.
@@ -42,10 +45,12 @@ parse_common_args() {
   done
 }
 
-require_prompt() { [[ -n "$PROMPT" ]] || die "a --prompt is required"; }
+require_prompt() {
+  [[ -n "$PROMPT" ]] || die "a prompt is required (use --prompt TEXT or one positional prompt)"
+}
 
 # compose_prompt CALLEE -> echoes the prompt to send.
-# Prepends a neutral, read-only reviewer framing unless --raw was given.
+# Prepends a neutral advisory reviewer framing unless --raw was given.
 # CALLEE (e.g. "Gemini") is injected by the adapter; FROM comes from --from.
 compose_prompt() {
   local callee="$1"
@@ -53,8 +58,8 @@ compose_prompt() {
     printf '%s' "$PROMPT"
     return
   fi
-  printf 'You are %s, consulting with %s as an independent, read-only third-party reviewer.\n' "$callee" "$FROM"
-  printf 'Do not edit files or run destructive commands; treat this as advisory.\n\n'
+  printf 'You are %s, consulting with %s as an independent advisory reviewer.\n' "$callee" "$FROM"
+  printf 'Do not edit files or run destructive commands; treat this as advice to verify locally.\n\n'
   printf '%s' "$PROMPT"
 }
 

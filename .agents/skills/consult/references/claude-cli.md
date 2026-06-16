@@ -30,3 +30,7 @@ claude -p --permission-mode plan [--output-format json] [--model M] \
   with its own tools in plan mode.
 - `claude -p` skips the workspace-trust dialog — only consult inside directories you trust.
 - Web/search tools are left at the CLI default (not restricted).
+- Plan-mode output may also be saved as a local Claude plan under `~/.claude/plans/`. If an
+  interrupted consult or truncated stdout only refers to a plan, inspect the newest relevant file
+  there. Treat it as a Claude-specific recovery path and as local session data that may contain
+  prompt or repo context.

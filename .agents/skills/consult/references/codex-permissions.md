@@ -9,13 +9,13 @@ Other agents (Claude Code, Gemini CLI, Cursor, …) can ignore this file.
 Consultation CLIs (Gemini, OpenCode, …) reuse the user's existing CLI auth and need network access.
 Inside Codex's restricted sandbox, headless prompts can block on browser auth or network prompts
 that are not usefully interactive, and may leave stale processes. Run the wrapper with **escalated
-execution from the start**; do not first try it sandboxed and fall back. The prompt stays read-only
-even though the shell command runs outside the sandbox.
+execution from the start**; do not first try it sandboxed and fall back. The consultation keeps its
+backend-specific mutation restrictions even though the shell command runs outside the sandbox.
 
 ## Narrow, persistent prefix approval
 
-Approve the wrapper itself, not a broad `gemini` / `opencode` / `bash` prefix, so future read-only
-consultations run without repeated prompts:
+Approve the wrapper itself, not a broad `gemini` / `opencode` / `bash` prefix, so future
+mutation-restricted consultations run without repeated prompts:
 
 ```json
 {
@@ -23,7 +23,7 @@ consultations run without repeated prompts:
   "workdir": "<project-root>",
   "sandbox_permissions": "require_escalated",
   "prefix_rule": [".agents/skills/consult/scripts/consult.sh"],
-  "justification": "Allow read-only consultations to use existing CLI auth outside the Codex sandbox?"
+  "justification": "Allow mutation-restricted consultations to use existing CLI auth outside the Codex sandbox?"
 }
 ```
 
@@ -35,8 +35,10 @@ sandboxed run. Run the wrapper directly from the project root so the prefix rule
 predictable. Do not request a broad prefix such as `["gemini"]`, `["opencode"]`, `["bash"]`, or
 `["python3"]`.
 
-## Read-only scoping is still enforced
+## Mutation restrictions still apply
 
-Escalated execution only lifts the *shell* sandbox. The consultation itself remains read-only:
-the `gemini` adapter uses `--approval-mode plan`, the `opencode` adapter uses `--agent plan` and
-rejects `--dangerously-skip-permissions`. Keep prompts advisory and avoid sending secrets.
+Escalated execution only lifts the *shell* sandbox. The consultation still uses backend-specific
+restrictions: the `codex` adapter passes `-s read-only -a never`, the `gemini` adapter uses
+`--approval-mode plan`, the `claude` adapter uses `--permission-mode plan`, the `opencode` adapter
+uses `--agent plan`, and the `pi` adapter uses a read-only tool allowlist with discovery disabled.
+Keep prompts advisory and avoid sending secrets.

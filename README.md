@@ -1,9 +1,9 @@
 # Consult Skill
 
 `consult` is an Agent Skills-compatible skill for asking another coding agent for an independent,
-read-only review, brainstorming pass, debugging partner, or second opinion. A host agent can use it
-to involve installed backends including Gemini, OpenCode, Claude, Codex, and Pi without making the
-user think about the underlying command wrapper.
+advisory consultation with mutation-restricted defaults: review, brainstorming pass, debugging
+partner, or second opinion. A host agent can use it to involve installed backends including Gemini,
+OpenCode, Claude, Codex, and Pi without making the user think about the underlying command wrapper.
 
 The canonical skill lives at:
 
@@ -55,7 +55,7 @@ Run a consultation:
 .agents/skills/consult/scripts/consult.sh --to gemini "Review this change for risks."
 ```
 
-Use `--prompt` when it is clearer for scripts:
+Use `--prompt` when it is clearer for scripts or when the prompt begins with `-`:
 
 ```bash
 .agents/skills/consult/scripts/consult.sh --to gemini --prompt "Review this change for risks."
@@ -67,10 +67,18 @@ Preview the exact backend command:
 .agents/skills/consult/scripts/consult.sh --to pi --dry-run "Check the API design."
 ```
 
+Run deterministic wrapper checks:
+
+```bash
+.agents/skills/consult/tests/wrapper.sh
+```
+
 ## Notes
 
 - Backend CLIs must be installed and authenticated separately.
 - Consultations are advisory; verify claims locally before acting on them.
 - The strongest read-only guarantee is the Codex backend's OS sandbox. Other backends use
   approval, plan, or tool allowlist controls as documented in the skill references.
+- `--json` output shape is backend-specific; Gemini, Claude, and OpenCode use their CLI formats,
+  Codex emits JSONL events, and Pi intentionally rejects consult `--json`.
 - The project is licensed under Apache-2.0. See `LICENSE` and `NOTICE`.

@@ -1,0 +1,107 @@
+{
+  "schema_version": 1,
+  "description": "Seed eval cases for the consult skill. Deterministic wrapper behavior is covered by .agents/skills/consult/tests/wrapper.sh; these cases are intended for host/model eval runners.",
+  "trigger_evals": [
+    {
+      "id": "trigger_explicit_gemini",
+      "input": "Ask Gemini to review this change critically and return only actionable risks.",
+      "expected": {
+        "should_trigger": true,
+        "backend": "gemini",
+        "reason": "The user explicitly asks for a named external agent."
+      }
+    },
+    {
+      "id": "trigger_explicit_pi",
+      "input": "Consult Pi on the API design. Be thorough, but avoid overengineering.",
+      "expected": {
+        "should_trigger": true,
+        "backend": "pi",
+        "reason": "The user explicitly asks to consult a named external agent."
+      }
+    },
+    {
+      "id": "trigger_explicit_opencode",
+      "input": "Cross-check this migration plan with OpenCode before implementing it.",
+      "expected": {
+        "should_trigger": true,
+        "backend": "opencode",
+        "reason": "The user explicitly asks to cross-check with a named external agent."
+      }
+    },
+    {
+      "id": "trigger_multi_agent_debate",
+      "input": "Have Gemini and Pi discuss this architecture for two rounds, then synthesize the tradeoffs.",
+      "expected": {
+        "should_trigger": true,
+        "backend": "multiple",
+        "reason": "The user asks for multi-agent consultation and continuity."
+      }
+    },
+    {
+      "id": "trigger_high_risk_independent_review",
+      "input": "This change touches auth token handling and privilege checks; get an independent high-risk review before we ship it.",
+      "expected": {
+        "should_trigger": true,
+        "backend": "unspecified",
+        "reason": "The user asks for an independent high-risk review, even without naming a backend."
+      }
+    },
+    {
+      "id": "near_miss_plain_review",
+      "input": "Review this code and list the bugs.",
+      "expected": {
+        "should_trigger": false,
+        "reason": "This is an ordinary review request with no external-agent request."
+      }
+    },
+    {
+      "id": "near_miss_plain_debug",
+      "input": "Debug this failing test and fix the implementation.",
+      "expected": {
+        "should_trigger": false,
+        "reason": "This is ordinary debugging with no request for another agent or independent review."
+      }
+    },
+    {
+      "id": "near_miss_plain_brainstorm",
+      "input": "Brainstorm options for the cache invalidation API.",
+      "expected": {
+        "should_trigger": false,
+        "reason": "Brainstorming alone should not trigger consult without an external-agent request."
+      }
+    }
+  ],
+  "output_evals": [
+    {
+      "id": "output_prompt_framing",
+      "input": "Ask Gemini to review the retry logic in src/client.ts for edge cases.",
+      "checks": [
+        "Uses consult.sh with --to gemini rather than invoking gemini directly.",
+        "Frames a concrete goal, relevant context, and requested return shape.",
+        "Keeps the advisory do-not-edit framing unless --raw is explicitly justified.",
+        "Does not add raw backend passthrough flags."
+      ]
+    },
+    {
+      "id": "output_verification_discipline",
+      "input": "Cross-check this bug fix with OpenCode, then tell me whether to apply it.",
+      "checks": [
+        "Treats the consulted response as advice, not authority.",
+        "Verifies repo-specific claims with local file reads, tests, or commands before acting.",
+        "Reports only conclusions that survived local verification.",
+        "Calls out any unverified or contradicted claims."
+      ]
+    },
+    {
+      "id": "output_safe_command_usage",
+      "input": "Consult Pi about this design and include README.md as context.",
+      "checks": [
+        "Uses normalized consult flags only, such as --to pi and --file README.md.",
+        "Does not use a raw -- passthrough or direct backend capability flags.",
+        "Avoids --raw unless the prompt truly needs to bypass reviewer framing.",
+        "Accounts for Pi-specific caveats, including no consult --json support and raw prompt guards."
+      ]
+    }
+  ]
+}

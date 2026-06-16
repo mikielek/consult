@@ -5,10 +5,10 @@ set -euo pipefail
 # Backend adapter: Pi CLI. Translates the normalized consult interface into
 #   pi -p --tools read,grep,ls --no-extensions --no-skills
 #      --no-prompt-templates --no-themes --no-context-files --no-approve
-#      [--no-session] [--mode json] [--model M]
+#      [--no-session] [--model M]
 #      [--continue | --session ID] [--session-id ID] [@file...] PROMPT
-# Read-only is enforced by a Pi tool allowlist: no edit/write/bash tools and
-# no discovered extension/custom tools. See ../../references/pi-cli.md for observed behavior.
+# Mutation is restricted by a Pi tool allowlist: no edit/write/bash tools and no
+# discovered extension/custom tools. See ../../references/pi-cli.md for observed behavior.
 
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../lib/common.sh"
 
@@ -16,6 +16,7 @@ parse_common_args "$@"
 require_prompt
 
 [[ -n "$RESUME" && -n "$SESSION_ID" ]] && die "use either --resume or --session-id, not both"
+[[ "$JSON" -eq 0 ]] || die "pi backend does not support --json: Pi JSON mode emits verbose JSONL tool/thinking events; omit --json for clean final-response output"
 
 prompt="$(compose_prompt "Pi")"
 
@@ -35,7 +36,6 @@ cmd=(
   --no-context-files
   --no-approve
 )
-[[ "$JSON" -eq 1 ]] && cmd+=(--mode json)
 [[ -n "$MODEL" ]] && cmd+=(--model "$MODEL")
 if [[ -n "$RESUME" ]]; then
   if [[ "$RESUME" == "latest" ]]; then

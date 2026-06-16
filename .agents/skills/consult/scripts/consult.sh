@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# consult.sh - route a read-only consultation to a pluggable backend agent.
+# consult.sh - route an advisory consultation to a pluggable backend agent.
 #
 # Add a backend by dropping scripts/backends/<name>.sh; remove it by deleting
 # the file. `consult.sh --list` discovers whatever is present.
@@ -12,17 +12,18 @@ BACKENDS_DIR="$SKILL_DIR/scripts/backends"
 usage() {
   cat <<'USAGE'
 Usage:
-  consult.sh --to BACKEND --prompt TEXT [options]
+  consult.sh --to BACKEND [--prompt TEXT | TEXT] [options]
   consult.sh --list
   consult.sh --help
 
-Routes a read-only consultation to BACKEND (see --list). Only the documented
-flags below are accepted — there is no '--' passthrough to the backend CLI.
+Routes an advisory consultation to BACKEND (see --list) with mutation-restricted
+defaults. Only the documented flags below are accepted — there is no '--'
+passthrough to the backend CLI.
 
 Normalized options (a backend may not support all of them):
   --to BACKEND        Which backend to consult. See --list.
-  -p, --prompt TEXT   The consultation prompt (any kind: review, design,
-                      brainstorm, debugging, risk analysis, second opinion...).
+  -p, --prompt TEXT   The consultation prompt. One positional TEXT argument is
+                      also accepted; use --prompt if TEXT begins with '-'.
       --from CALLER   Name of the calling agent (default: "a coding agent").
       --json          Ask the backend for machine-readable output.
   -r, --resume VALUE  Continue a prior session ("latest" or a session id).
@@ -32,6 +33,13 @@ Normalized options (a backend may not support all of them):
       --raw           Send --prompt verbatim, skipping the reviewer framing.
       --dry-run       Print the resolved backend command without running it.
   -h, --help          Show this help.
+
+Notes:
+  --json output is backend-specific: Codex emits JSONL events, Gemini/Claude/
+  OpenCode use their CLI formats, and Pi rejects consult --json.
+  Backend output is printed directly and may be truncated by the host UI.
+  Exit 2 indicates wrapper validation or setup failure; live backend exits pass
+  through otherwise.
 USAGE
 }
 
@@ -59,13 +67,54 @@ list_backends() {
 
 to=""
 forward=()
+forwarding=0
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --to)     [[ $# -ge 2 ]] || { echo "missing value for --to" >&2; exit 2; }; to="$2"; shift 2 ;;
-    --to=*)   to="${1#*=}"; shift ;;
-    --list)   list_backends; exit 0 ;;
-    -h|--help) usage; exit 0 ;;
-    *)        forward+=("$1"); shift ;;
+    --to)
+      [[ $# -ge 2 ]] || { echo "missing value for --to" >&2; exit 2; }
+      to="$2"
+      shift 2
+      ;;
+    --to=*)
+      to="${1#*=}"
+      shift
+      ;;
+    --list)
+      if [[ "$forwarding" -eq 0 ]]; then
+        list_backends
+        exit 0
+      fi
+      forward+=("$1")
+      shift
+      ;;
+    -h|--help)
+      if [[ "$forwarding" -eq 0 ]]; then
+        usage
+        exit 0
+      fi
+      forward+=("$1")
+      shift
+      ;;
+    -p|--prompt|--from|-r|--resume|--session-id|-m|--model|-f|--file)
+      forwarding=1
+      if [[ $# -ge 2 ]]; then
+        forward+=("$1" "$2")
+        shift 2
+      else
+        forward+=("$1")
+        shift
+      fi
+      ;;
+    --json|--raw|--dry-run)
+      forwarding=1
+      forward+=("$1")
+      shift
+      ;;
+    *)
+      forwarding=1
+      forward+=("$1")
+      shift
+      ;;
   esac
 done
 

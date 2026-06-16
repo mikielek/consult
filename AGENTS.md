@@ -11,8 +11,10 @@ This repository publishes the `consult` Agent Skill. The canonical skill package
 - `.agents/skills/consult/scripts/backends/*.sh` are backend adapters.
 - `.agents/skills/consult/scripts/lib/common.sh` contains shared argument parsing and prompt framing.
 - `.agents/skills/consult/references/*.md` records backend-specific CLI behavior and caveats.
+- `.agents/skills/consult/tests/wrapper.sh` is a dependency-free deterministic wrapper harness.
+- `evals/evals.json` records trigger and output eval seed cases for host/model eval runners.
 
-There are no build artifacts, compiled assets, or formal test directories.
+There are no build artifacts or compiled assets.
 
 ## Build, Test, and Development Commands
 
@@ -37,6 +39,12 @@ Checks shell syntax.
 
 Verifies generated backend commands without invoking a model.
 
+```bash
+.agents/skills/consult/tests/wrapper.sh
+```
+
+Runs deterministic wrapper checks with fake backend binaries; it should not call any model.
+
 ## Coding Style & Naming Conventions
 
 Shell scripts use Bash with `set -euo pipefail`, argv arrays for command construction, and quoted
@@ -45,9 +53,9 @@ small backend-specific adapters over branching in `consult.sh`.
 
 ## Testing Guidelines
 
-There is no automated test framework yet. For changes, run shell syntax checks and at least one
-`--dry-run` for every backend you touch. For behavior claims in `references/*.md`, verify against
-the actual CLI where practical and include version/date notes.
+For changes, run shell syntax checks and `.agents/skills/consult/tests/wrapper.sh`. Also run at
+least one `--dry-run` for every backend you touch. For behavior claims in `references/*.md`, verify
+against the actual CLI where practical and include version/date notes.
 
 ## Maintenance Hints
 
@@ -62,6 +70,35 @@ Important tradeoffs are not always obvious from the scripts. Preserve comparison
 shortcomings, and capability matrices in `references/*.md` so future maintainers can understand why
 one backend uses a sandbox, another uses plan/approval mode, and Pi uses tool allowlists plus
 discovery hardening.
+
+Retrospective notes from the trigger/safety tightening work:
+
+- Keep the skill frontmatter trigger narrow. Explicit external-agent requests should trigger; plain
+  "review this code", "debug this test", and "brainstorm options" should not trigger consult unless
+  the user asks for another agent/model or a clearly high-risk independent review.
+- The shared parser accepts exactly one non-flag positional prompt for convenience. Prompts beginning
+  with `-` must use `--prompt`; there is no `--` passthrough by design.
+- `consult.sh` has a small outer parser before adapter/common parsing. It may intercept top-level
+  `--to`, `--list`, and `--help`, but once any backend-forwarded argument starts it must preserve
+  later tokens verbatim, including values like `--prompt "--help"` or `--resume "--list"`. Keep
+  regression coverage for this in `tests/wrapper.sh`.
+- Be precise about safety wording. Only Codex has the strongest OS-sandbox read-only guarantee.
+  Gemini, Claude, and OpenCode are plan/approval-gated, and Pi is tool-allowlist/discovery-hardened.
+  All backends can still read accessible files and return their contents.
+- `--resume` and `--session-id` conflicts live in adapters because backend support differs. Codex and
+  OpenCode reject caller-provided session ids; Gemini, Claude, and Pi support them but not together
+  with resume.
+- `--file` is backend-specific. Gemini, Codex, and Claude reject it; OpenCode forwards `--file`;
+  Pi maps it to `@path`, which Pi reads while constructing the prompt and outside the tool allowlist.
+- Pi consult `--json` is intentionally unsupported because Pi JSON mode emits verbose JSONL
+  tool/thinking events while plain `pi -p` prints the final response. Do not re-add `--mode json`
+  unless a caller is prepared to consume that event stream.
+- Pi has no safe `--` end-of-options delimiter. The adapter rejects `--raw --prompt` values starting
+  with `-` or `@`; test those exact forms because a positional `-...` prompt fails earlier in common
+  parsing.
+- `evals/evals.json` is an artifact, not an executable harness. Keep deterministic wrapper behavior
+  in `.agents/skills/consult/tests/wrapper.sh`; use the eval JSON for host/model trigger and output
+  quality checks.
 
 ## Commit & Pull Request Guidelines
 
