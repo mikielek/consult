@@ -51,6 +51,10 @@ applies across all tool sources, so any MCP-provided tools are excluded too), bu
 Pi can still read any file visible to the process through `read`, `grep`, or `ls` and return its
 contents.
 
+For change reviews, Pi has no Git tool and cannot allowlist `git show` except by enabling `bash`.
+Do not add shell access for that. Follow Canonical Change Review in `SKILL.md`: the host supplies
+one canonical artifact for every backend to review.
+
 ## Caveats
 
 - Pi has no safe `--` end-of-options delimiter, and its argument parser scans all argv for flags

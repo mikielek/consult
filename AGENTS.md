@@ -92,6 +92,12 @@ Retrospective notes from the trigger/safety tightening work:
   backend-specific abstraction: some adapters rejected it, OpenCode forwarded it, and Pi's old
   `@path` mapping read files while constructing the prompt outside the tool allowlist. Ask callers
   to mention paths in the prompt instead.
+- Do not treat Canonical Change Review as a Pi-only workaround. Do not add Pi bash/git passthrough,
+  direct `git show` allowlisting via shell, or `--file`/`--context-file` substitutes to solve
+  change-review parity. The issue is consistent review input across backends with different
+  permissions, sandboxes, current files, staged state, untracked files, and CLI behavior. The prompt
+  secret preflight is intentionally narrow and never scans referenced files, so artifact files must
+  be sanitized by the host.
 - Pi consult `--json` is intentionally unsupported because Pi JSON mode emits verbose JSONL
   tool/thinking events while plain `pi -p` prints the final response. Do not re-add `--mode json`
   unless a caller is prepared to consume that event stream.

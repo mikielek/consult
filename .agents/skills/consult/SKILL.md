@@ -86,6 +86,31 @@ Match the deliverable to the kind of consultation:
 - **Brainstorm** → a few divergent options, then a recommendation.
 - **Debugging** → ranked hypotheses plus reproduction / diagnostic steps.
 
+### Canonical Change Review
+
+For any requested change review, the host should produce one canonical artifact that defines the
+reviewed scope, then provide that same artifact to every consult backend. Do not rely on each
+backend to reconstruct the change independently.
+
+Generate Git-backed artifacts with controlled commands such as:
+
+- `git --no-pager show --no-ext-diff --no-textconv --no-color <ref>`
+- `git --no-pager diff --no-ext-diff --no-textconv --no-color <base>...<head>`
+- `git --no-pager diff --cached --no-ext-diff --no-textconv --no-color`
+- `git --no-pager diff --no-ext-diff --no-textconv --no-color`
+
+For non-Git or generated changes, provide the patch or diff artifact explicitly. Include explicit
+untracked files when they are part of the requested scope; plain `git diff` does not include them.
+
+Inline small artifacts in the prompt. For large artifacts, write a sanitized temporary file and
+provide its absolute readable path. Prefer an out-of-repo temporary path. If sandbox reachability
+requires workspace-local placement, keep it under an ignored or untracked temporary path, and clean
+up only artifacts the host created. The secret preflight scans only the prompt, not artifact files,
+so the host must sanitize file artifacts before sharing them.
+
+Backends may inspect repository files for context, but the supplied artifact defines the change
+scope under review.
+
 ## Session continuity
 
 - Default to a one-shot prompt for a single review, quick check, or standalone answer.
