@@ -96,6 +96,16 @@
       }
     },
     {
+      "id": "trigger_qwen_unspecified_backend",
+      "input": "Get a second opinion from Qwen on this design.",
+      "expected": {
+        "should_trigger": true,
+        "backend": "unspecified",
+        "model_hint": "qwen",
+        "reason": "Qwen is a model/provider constraint, not a backend; trigger, but ask which backend serves that model rather than defaulting."
+      }
+    },
+    {
       "id": "trigger_raspberry_pi_named_backend",
       "input": "Ask Gemini to review my Raspberry Pi GPIO code.",
       "expected": {
