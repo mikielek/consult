@@ -130,6 +130,13 @@ test_pi_defaults() {
   assert_stdout_contains "Do not edit files"
 }
 
+test_pi_model_forwarding() {
+  run_case --to pi --dry-run --model openai/gpt-4.1 "Review API"
+  assert_status 0
+  assert_stdout_contains "pi -p"
+  assert_stdout_contains "--model openai/gpt-4.1"
+}
+
 test_passthrough_rejected() {
   run_case --to gemini --dry-run -- "Review API"
   assert_status 2
@@ -230,6 +237,7 @@ run_test "gemini dry-run uses plan approval defaults" test_gemini_defaults
 run_test "claude dry-run uses plan permission defaults" test_claude_defaults
 run_test "opencode dry-run uses plan agent defaults" test_opencode_defaults
 run_test "pi dry-run uses tool allowlist and discovery hardening" test_pi_defaults
+run_test "pi forwards --model to the pi CLI" test_pi_model_forwarding
 run_test "raw backend passthrough is rejected" test_passthrough_rejected
 run_test "prompt secret preflight blocks obvious secrets" test_prompt_secret_preflight
 run_test "unknown normalized flags are rejected" test_unknown_flag_rejected

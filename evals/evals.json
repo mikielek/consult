@@ -48,6 +48,63 @@
       }
     },
     {
+      "id": "trigger_pi_cli_phrasing",
+      "input": "Ask the Pi CLI to review this parser change.",
+      "expected": {
+        "should_trigger": true,
+        "backend": "pi",
+        "reason": "\"Pi CLI\" names the Pi backend explicitly."
+      }
+    },
+    {
+      "id": "trigger_pi_backend_token",
+      "input": "Use the `pi` backend to cross-check this migration.",
+      "expected": {
+        "should_trigger": true,
+        "backend": "pi",
+        "reason": "\"the `pi` backend\" is an explicit Pi backend request."
+      }
+    },
+    {
+      "id": "trigger_gpt_via_pi",
+      "input": "Consult GPT via Pi about this API.",
+      "expected": {
+        "should_trigger": true,
+        "backend": "pi",
+        "model_hint": "gpt",
+        "reason": "Pi is the explicit backend; GPT is a model hint resolved via --model, not a backend."
+      }
+    },
+    {
+      "id": "trigger_gpt_unspecified_backend",
+      "input": "Consult GPT about this API.",
+      "expected": {
+        "should_trigger": true,
+        "backend": "unspecified",
+        "model_hint": "gpt",
+        "reason": "An explicit consult request triggers, but GPT names a model/provider, not a backend; do not default to codex — run --list and ask which backend to use."
+      }
+    },
+    {
+      "id": "trigger_sonnet_unspecified_backend",
+      "input": "Get a second opinion from Sonnet on this design.",
+      "expected": {
+        "should_trigger": true,
+        "backend": "unspecified",
+        "model_hint": "sonnet",
+        "reason": "Sonnet is a model/provider constraint, not a backend; trigger, but ask which backend serves that model rather than defaulting."
+      }
+    },
+    {
+      "id": "trigger_raspberry_pi_named_backend",
+      "input": "Ask Gemini to review my Raspberry Pi GPIO code.",
+      "expected": {
+        "should_trigger": true,
+        "backend": "gemini",
+        "reason": "The explicit named-agent request (Gemini) triggers; \"Raspberry Pi\" is hardware context and must not be read as the pi backend."
+      }
+    },
+    {
       "id": "near_miss_plain_review",
       "input": "Review this code and list the bugs.",
       "expected": {
@@ -69,6 +126,22 @@
       "expected": {
         "should_trigger": false,
         "reason": "Brainstorming alone should not trigger consult without an external-agent request."
+      }
+    },
+    {
+      "id": "near_miss_math_pi",
+      "input": "Calculate pi to 10 digits.",
+      "expected": {
+        "should_trigger": false,
+        "reason": "\"pi\" here is the number π, not the Pi backend, and there is no external-agent request."
+      }
+    },
+    {
+      "id": "near_miss_raspberry_pi",
+      "input": "Review my Raspberry Pi GPIO setup.",
+      "expected": {
+        "should_trigger": false,
+        "reason": "Raspberry Pi hardware/GPIO is not the Pi backend, and this is an ordinary review request."
       }
     }
   ],
@@ -101,6 +174,17 @@
         "Does not use a raw -- passthrough or direct backend capability flags.",
         "Avoids --raw unless the prompt truly needs to bypass reviewer framing.",
         "Accounts for Pi-specific caveats, including no consult --json support and raw prompt guards."
+      ]
+    },
+    {
+      "id": "output_model_vs_backend_disambiguation",
+      "input": "Consult GPT about this API.",
+      "checks": [
+        "Recognizes GPT as a model/provider constraint, not a backend name.",
+        "Runs consult.sh --list to enumerate installed backends instead of guessing.",
+        "Asks which backend to use when more than one installed backend could serve the request; does not silently default to codex or any single backend.",
+        "Passes the model intent via --model on the chosen backend (e.g. --to pi --model <gpt-family-model>), not by treating GPT as --to.",
+        "Does not read private config, auth, credential, or key files, copied agent config directories, or session logs to discover or choose a model."
       ]
     }
   ]

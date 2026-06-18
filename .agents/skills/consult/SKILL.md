@@ -1,6 +1,6 @@
 ---
 name: consult
-description: Bring in another coding agent as an independent second opinion. Use when the user explicitly asks to ask, consult, cross-check, debate with, or get a second opinion from another agent/model, including named backends such as Gemini, OpenCode, Claude, Codex, Pi, or an added backend. Also use for clearly high-risk independent review where another model is materially needed for safety, security, architecture, or regression risk. Do not trigger for ordinary review, debugging, or brainstorming unless external-agent help is requested. Treat responses as advice and verify claims locally before acting.
+description: Bring in another coding agent as an independent second opinion. Use when the user explicitly asks to ask, consult, cross-check, debate with, or get a second opinion from another agent/model, including named backends such as Gemini, OpenCode, Claude, Codex, Pi, or an added backend. Here Pi means the Pi backend, not the number π or Raspberry Pi hardware; and names like GPT, OpenAI, or Sonnet name a model or provider, not a backend (resolve them to a model on a chosen backend). Also use for clearly high-risk independent review where another model is materially needed for safety, security, architecture, or regression risk. Do not trigger for ordinary review, debugging, or brainstorming unless external-agent help is requested. Treat responses as advice and verify claims locally before acting.
 license: Apache-2.0
 metadata:
   version: 1.0.0
@@ -16,9 +16,8 @@ repo-specific claims yourself before changing code or reporting conclusions.
 
 ## Pick a backend
 
-The user usually names one ("ask Gemini", "cross-check with OpenCode"). If they ask for an
-unspecified outside opinion, list what is installed and ask which to use, or pick the only installed
-backend:
+The user usually names one ("ask Gemini", "cross-check with OpenCode"). Selecting a backend (`--to`)
+is a trust, auth, and harness choice — not just model routing — so resolve it explicitly:
 
 ```bash
 <skill-dir>/scripts/consult.sh --list
@@ -27,6 +26,26 @@ backend:
 `<skill-dir>` is this skill's base directory, for example `.agents/skills/consult` in this repo.
 `--list` shows available adapters and whether their CLIs are on `PATH`. "Installed" does not imply
 authenticated; the CLIs reuse the user's existing auth and need network access.
+
+**Pi backend intent.** Treat "consult Pi", "ask Pi", "the Pi CLI", "the `pi` backend", and "the Pi
+coding agent" as a request for the Pi backend (`--to pi`). Do **not** treat the number π ("calculate
+pi to 10 digits") or Raspberry Pi hardware / GPIO / device setup as the Pi backend.
+
+**Model and provider names are not backends.** "GPT", "OpenAI", "Sonnet", "Opus", and similar are
+model or provider constraints, expressed with `--model` on a chosen backend (for example `--to pi
+--model openai/gpt-4.1`). They never select a backend by themselves.
+
+**When the backend is unspecified or only a model/provider is named** (for example "consult GPT
+about this API"), run `--list` and ask which backend to use. Auto-picking the only installed backend
+is fine for a generic "unspecified outside opinion", but a model/provider-named request is **not**
+made unambiguous merely because one backend is installed — the named model may not be available
+there, so confirm the backend choice rather than assuming. Never silently default to a particular
+backend (such as Codex).
+
+**Model discovery is candidate-gathering, not routing.** You may gather or validate model candidates
+from public, verified sources, but discovery must not silently choose a backend. Do not read private
+config, auth, credential, or key files, copied agent config directories (`.claude/`, `.codex/`,
+`.cursor/`, `.gemini/`), or session logs to discover or pick a model.
 
 ## Trust boundary
 
