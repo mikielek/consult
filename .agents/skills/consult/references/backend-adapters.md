@@ -6,8 +6,11 @@ than in `SKILL.md`. It travels with the skill when the directory is copied or sy
 
 ## Remove a backend
 
-Delete its `scripts/backends/<name>.sh`. Nothing else — `scripts/consult.sh --list` discovers
-backends dynamically from that directory, so the backend simply disappears.
+Delete its `scripts/backends/<name>.sh` — `scripts/consult.sh --list` discovers backends dynamically
+from that directory, so it disappears from the dispatcher immediately. Then clean up the
+documentation touchpoints: delete `references/<name>-cli.md`, remove its row from the discovery
+Parity table in `references/model-discovery.md`, and (if it was a named trigger) remove it from the
+backend name lists / frontmatter trigger in `SKILL.md` and update `evals/evals.json`.
 
 ## Add a backend
 
@@ -48,7 +51,14 @@ An adapter:
 
 The existing adapters are the canonical templates: `claude.sh`, `codex.sh`, `gemini.sh`,
 `opencode.sh`, `pi.sh`. Record observed CLI behavior, tested flags, and caveats for the new backend
-in a `references/<name>-cli.md`.
+in a `references/<name>-cli.md`, **including a "Model discovery" section** (its auth-signal command,
+any native model-listing command, and the safe wrapper probe `consult.sh --to <name> --model M
+--prompt "hi"`). Add **one row** to the discovery Parity table in `references/model-discovery.md`.
+Update the backend name lists / frontmatter trigger in `SKILL.md` and `evals/evals.json` only if the
+backend should be a named trigger.
+
+Discovery itself is a documented **manual** workflow (`references/model-discovery.md`), not a scripted
+adapter capability — there is no `discover_models()` hook to implement.
 
 ## Conventions
 

@@ -45,7 +45,10 @@ backend (such as Codex).
 **Model discovery is candidate-gathering, not routing.** You may gather or validate model candidates
 from public, verified sources, but discovery must not silently choose a backend. Do not read private
 config, auth, credential, or key files, copied agent config directories (`.claude/`, `.codex/`,
-`.cursor/`, `.gemini/`), or session logs to discover or pick a model.
+`.cursor/`, `.gemini/`), or session logs to discover or pick a model. To inspect a backend's auth
+status or candidate models on demand, see `references/model-discovery.md` and run the non-mutating
+diagnostic commands there; verify a specific model with a one-shot `--to X --model Y --prompt "hi"`
+consult.
 
 ## Trust boundary
 

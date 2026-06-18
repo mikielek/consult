@@ -64,5 +64,7 @@ export CONSULT_TRUSTED_PATH="$HOME/.agents/skills/consult/scripts/consult.sh"
   adapters do not need the exec bit. If a `cp` drops the bit on `consult.sh`, either
   `chmod +x scripts/consult.sh` or invoke it as `bash scripts/consult.sh ...`.
 - **Backend CLIs**: each backend needs its CLI installed and authenticated (`gemini`, `opencode`,
-  `claude`, `codex`, `pi`). Add a backend by dropping `scripts/backends/<name>.sh`; remove one by
+  `claude`, `codex`, `pi`). `consult.sh --list` only reports whether a CLI is on `PATH` — not whether
+  it is authenticated or which models it can actually run; see `references/model-discovery.md` for the
+  on-demand auth/model checks. Add a backend by dropping `scripts/backends/<name>.sh`; remove one by
   deleting the file. See `references/backend-adapters.md` for the full adapter-authoring guide.

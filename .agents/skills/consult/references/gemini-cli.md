@@ -1,7 +1,8 @@
 # Gemini CLI Notes
 
 Used by the `gemini` backend adapter (`scripts/backends/gemini.sh`).
-Observed in a workspace on 2026-06-12 with Gemini CLI `0.46.0`.
+Observed in a workspace on 2026-06-12 with Gemini CLI `0.46.0`; rechecked on
+2026-06-18 with Gemini CLI `0.47.0`.
 
 ## Help Output Highlights
 
@@ -15,6 +16,25 @@ Observed in a workspace on 2026-06-12 with Gemini CLI `0.46.0`.
 - `--list-sessions` lists project sessions.
 - `--output-format` accepts `text`, `json`, and `stream-json`.
 - `--sandbox` exists, but it may require Docker/Podman or a configured `GEMINI_SANDBOX` command.
+
+## Model discovery
+
+Gemini CLI has no native model listing command in `0.47.0`. `gemini --list-sessions` is a
+non-mutating diagnostic that only confirms the CLI can read the local project session store — it is
+**not** a provider-auth check. Model choice relies on known ids (e.g. `gemini-2.5-flash`,
+`gemini-2.5-pro`) passed via `--model`, plus a probe.
+
+Probing is the only way to verify that Google auth and generation work. Run a one-shot consult
+through the wrapper, which applies `--approval-mode plan`, the reviewer framing, and the secret
+preflight:
+
+```bash
+scripts/consult.sh --to gemini --model gemini-2.5-flash --prompt "hi"
+```
+
+Add `--dry-run` to see the exact resolved `gemini` command (it includes `--model` and the framed
+prompt; the approval-gated shape is shown under "Tested Behavior" below). Do not hand-run a raw
+`gemini` probe — use the wrapper so the safe defaults and preflight always apply.
 
 ## Tested Behavior
 

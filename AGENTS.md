@@ -138,6 +138,22 @@ Retrospective notes from the trigger/safety tightening work:
   from the skill contract. The `trigger_evals` are not deterministically runnable (classifying
   natural-language input needs a model judge), so do not add a behavioral runner or schema validator
   for them here.
+- Prefer a documented manual workflow over a scripted feature when the skill's "user" is an LLM agent
+  and the underlying CLIs drift or there is no machine-readable consumer yet. Example: model discovery
+  is a manual runbook (`references/model-discovery.md`), not a `--discover` flag; "probing" a model is
+  a one-shot consult through the wrapper (`--to X --model Y --prompt "hi"`), which reuses the adapter's
+  safe defaults and secret preflight. The wrapper one-shot is the **only** recommended probe — keep
+  raw vendor probe commands out of the docs and point to `--dry-run` for the exact resolved command
+  (the live one-shot verifies reachability; `--dry-run` only previews it). There is intentionally no
+  `discover_models()` adapter hook.
+- `references/*.md` are on-demand runbooks loaded into the agent's context, so keep them concise and
+  token-efficient. The **detailed, volatile command blocks** (flags, output details, version notes)
+  live in `references/<backend>-cli.md`; cross-backend synthesis lives in
+  `references/model-discovery.md`, whose Parity table may name minimal auth/listing commands for
+  comparison but should not repeat the detailed blocks.
+- Mind per-backend touchpoints when adding or removing a backend: besides the adapter, the discovery
+  Parity table in `references/model-discovery.md` is one. The canonical add/remove checklist is in
+  `references/backend-adapters.md`.
 
 ## Commit & Pull Request Guidelines
 

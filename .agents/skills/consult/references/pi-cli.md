@@ -1,8 +1,8 @@
 # Pi CLI Notes
 
 Used by the `pi` backend adapter (`scripts/backends/pi.sh`).
-Observed in a workspace on 2026-06-16 with Pi `0.79.4`
-(`@earendil-works/pi-coding-agent`).
+Observed in a workspace on 2026-06-16 with Pi `0.79.4`; rechecked on
+2026-06-18 with Pi `0.79.6` (`@earendil-works/pi-coding-agent`).
 
 ## Adapter invocation
 
@@ -29,6 +29,16 @@ calls); flag order is otherwise irrelevant to Pi's parser.
 - The consult `--json` option is intentionally unsupported for Pi. Pi's `--mode json` emits verbose
   JSONL with intermediate tool/thinking events, while plain `pi -p` already filters that stream and
   prints only the final response. Omit `--json` for normal Pi consults.
+
+## Model discovery
+
+`pi --list-models [search]` is a non-mutating diagnostic that lists configured provider models in a
+table with provider, model, context, max output, thinking support, and image support (it uses Pi's
+own config and may take a config lock, but does not read private credential files directly). On
+2026-06-18, the configured environment listed 48 models (`openai-codex`: 4, `opencode`: 44). A fresh
+empty `PI_CODING_AGENT_DIR` with common provider API env vars unset returned "No models available,"
+so the listing is a useful auth/config signal, but a one-shot consult through the wrapper
+(`scripts/consult.sh --to pi --model <id> --prompt "hi"`) is still the definitive generation probe.
 
 ## Session persistence
 

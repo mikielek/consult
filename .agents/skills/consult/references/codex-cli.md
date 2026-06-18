@@ -1,7 +1,8 @@
 # Codex CLI Notes
 
 Used by the `codex` backend adapter (`scripts/backends/codex.sh`).
-Observed in a workspace on 2026-06-16 with `codex-cli 0.140.0`.
+Observed in a workspace on 2026-06-16 with `codex-cli 0.140.0`; rechecked on
+2026-06-18 with `codex-cli 0.141.0`.
 
 ## Adapter invocation
 
@@ -28,6 +29,21 @@ codex -s read-only -a never exec resume (--last | ID) --skip-git-repo-check [--j
 
 `--json` prints **JSONL** — newline-delimited JSON *events*, not a single JSON object (unlike
 gemini's `--output-format json`). Consumers must read it line by line / as a stream.
+
+## Model discovery
+
+These are non-mutating diagnostics that use Codex's own auth/config; none reads private credential
+files directly.
+
+- `codex doctor` reports auth state, including stored auth mode (`chatgpt`, `api-key`, etc.).
+- `codex debug models` renders the refreshed raw model catalog as JSON. On 2026-06-18, the current
+  configured run listed `gpt-5.5`, `gpt-5.4`, `gpt-5.4-mini`, and hidden `codex-auto-review`.
+- `codex debug models --bundled` skips refresh and dumps the catalog shipped with the binary. On
+  0.141.0, this bundled catalog also included `gpt-5.3-codex` and `gpt-5.2`.
+- Treat the catalog as candidate discovery, not account-specific reachability proof. A fresh
+  `CODEX_HOME` without stored auth can still render a bundled/raw catalog; probe a model with a
+  one-shot consult through the wrapper to verify actual generation:
+  `scripts/consult.sh --to codex --model gpt-5.5 --prompt "hi"`.
 
 ## Session persistence
 
