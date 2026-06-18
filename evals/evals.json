@@ -30,6 +30,24 @@
       }
     },
     {
+      "id": "trigger_explicit_claude",
+      "input": "Ask Claude to cross-check this refactor for regressions.",
+      "expected": {
+        "should_trigger": true,
+        "backend": "claude",
+        "reason": "The user explicitly asks for the named Claude backend."
+      }
+    },
+    {
+      "id": "trigger_explicit_codex",
+      "input": "Use the `codex` backend to review this patch.",
+      "expected": {
+        "should_trigger": true,
+        "backend": "codex",
+        "reason": "\"the `codex` backend\" explicitly names the Codex backend. Phrased as the backend token, not \"OpenAI Codex\", to keep it distinct from OpenAI-the-provider, which is a model hint."
+      }
+    },
+    {
       "id": "trigger_multi_agent_debate",
       "input": "Have Gemini and Pi discuss this architecture for two rounds, then synthesize the tradeoffs.",
       "expected": {
@@ -45,6 +63,15 @@
         "should_trigger": true,
         "backend": "unspecified",
         "reason": "The user asks for an independent high-risk review, even without naming a backend."
+      }
+    },
+    {
+      "id": "trigger_generic_unspecified_outside_opinion",
+      "input": "Get an outside second opinion on this change from another agent.",
+      "expected": {
+        "should_trigger": true,
+        "backend": "unspecified",
+        "reason": "A generic outside-opinion request names no model or provider. Run --list; if exactly one backend is installed, using it is acceptable; otherwise ask. This is the positive contrast to model/provider-named requests, which must confirm the backend even when only one is installed."
       }
     },
     {
@@ -83,6 +110,16 @@
         "backend": "unspecified",
         "model_hint": "gpt",
         "reason": "An explicit consult request triggers, but GPT names a model/provider, not a backend; do not default to codex — run --list and ask which backend to use."
+      }
+    },
+    {
+      "id": "trigger_openai_unspecified_backend",
+      "input": "Consult OpenAI about this API design.",
+      "expected": {
+        "should_trigger": true,
+        "backend": "unspecified",
+        "model_hint": "openai",
+        "reason": "OpenAI names a provider, not a backend. Triggering is correct, but do not silently route to codex just because it is the OpenAI-branded backend; run --list and confirm the backend, then pass the model via --model."
       }
     },
     {
@@ -192,7 +229,7 @@
       "checks": [
         "Recognizes GPT as a model/provider constraint, not a backend name.",
         "Runs consult.sh --list to enumerate installed backends instead of guessing.",
-        "Asks which backend to use when more than one installed backend could serve the request; does not silently default to codex or any single backend.",
+        "For a model/provider-named request with no explicit backend, asks or confirms which backend to use even if only one backend is installed (the named model may be unavailable there); never silently defaults to codex or any single backend.",
         "Passes the model intent via --model on the chosen backend (e.g. --to pi --model <gpt-family-model>), not by treating GPT as --to.",
         "Does not read private config, auth, credential, or key files, copied agent config directories, or session logs to discover or choose a model."
       ]

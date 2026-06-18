@@ -45,6 +45,12 @@ Verifies generated backend commands without invoking a model.
 
 Runs deterministic wrapper checks with fake backend binaries; it should not call any model.
 
+```bash
+jq empty evals/evals.json
+```
+
+Validates that the eval corpus is well-formed JSON.
+
 ## Coding Style & Naming Conventions
 
 Shell scripts use Bash with `set -euo pipefail`, argv arrays for command construction, and quoted
@@ -55,7 +61,9 @@ small backend-specific adapters over branching in `consult.sh`.
 
 For changes, run shell syntax checks and `.agents/skills/consult/tests/wrapper.sh`. Also run at
 least one `--dry-run` for every backend you touch. For behavior claims in `references/*.md`, verify
-against the actual CLI where practical and include version/date notes.
+against the actual CLI where practical and include version/date notes. When a change alters trigger,
+routing, or output-guidance semantics in `SKILL.md`, update `evals/evals.json` to match (or note why
+no update is needed) and validate it with `jq empty evals/evals.json`.
 
 ## Maintenance Hints
 
@@ -125,7 +133,11 @@ Retrospective notes from the trigger/safety tightening work:
   `CONSULT_TRUSTED_PATH` when reviewing untrusted code.
 - `evals/evals.json` is an artifact, not an executable harness. Keep deterministic wrapper behavior
   in `.agents/skills/consult/tests/wrapper.sh`; use the eval JSON for host/model trigger and output
-  quality checks.
+  quality checks. Validate it with `jq empty evals/evals.json`, and update it whenever trigger,
+  routing, or output-guidance semantics in `SKILL.md` change so the corpus does not silently drift
+  from the skill contract. The `trigger_evals` are not deterministically runnable (classifying
+  natural-language input needs a model judge), so do not add a behavioral runner or schema validator
+  for them here.
 
 ## Commit & Pull Request Guidelines
 

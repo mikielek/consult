@@ -1,6 +1,6 @@
 ---
 name: consult
-description: Bring in another coding agent as an independent second opinion. Use when the user explicitly asks to ask, consult, cross-check, debate with, or get a second opinion from another agent/model, including named backends such as Gemini, OpenCode, Claude, Codex, Pi, or an added backend. Here Pi means the Pi backend, not the number π or Raspberry Pi hardware; and names like GPT, OpenAI, or Sonnet name a model or provider, not a backend (resolve them to a model on a chosen backend). Also use for clearly high-risk independent review where another model is materially needed for safety, security, architecture, or regression risk. Do not trigger for ordinary review, debugging, or brainstorming unless external-agent help is requested. Treat responses as advice and verify claims locally before acting.
+description: Bring in another coding agent as an independent second opinion. Use when the user explicitly asks to ask, consult, cross-check, debate with, or get a second opinion from another agent/model, including named backends such as Gemini, OpenCode, Claude, Codex, Pi, or an added backend. Here Pi means the Pi backend, not the number π or Raspberry Pi hardware; and names like GPT, OpenAI, Sonnet, Opus, or Qwen name a model or provider, not a backend (resolve them to a model on a chosen backend). Also use for clearly high-risk independent review where another model is materially needed for safety, security, architecture, or regression risk. Do not trigger for ordinary review, debugging, or brainstorming unless external-agent help is requested. Treat responses as advice and verify claims locally before acting.
 license: Apache-2.0
 metadata:
   version: 1.0.0
@@ -31,8 +31,8 @@ authenticated; the CLIs reuse the user's existing auth and need network access.
 coding agent" as a request for the Pi backend (`--to pi`). Do **not** treat the number π ("calculate
 pi to 10 digits") or Raspberry Pi hardware / GPIO / device setup as the Pi backend.
 
-**Model and provider names are not backends.** "GPT", "OpenAI", "Sonnet", "Opus", and similar are
-model or provider constraints, expressed with `--model` on a chosen backend (for example `--to pi
+**Model and provider names are not backends.** "GPT", "OpenAI", "Sonnet", "Opus", "Qwen", and similar
+are model or provider constraints, expressed with `--model` on a chosen backend (for example `--to pi
 --model openai/gpt-4.1`). They never select a backend by themselves.
 
 **When the backend is unspecified or only a model/provider is named** (for example "consult GPT
