@@ -62,6 +62,17 @@ against the actual CLI where practical and include version/date notes.
 To add or remove a backend adapter, see
 `.agents/skills/consult/references/backend-adapters.md`.
 
+**Fixing the `gemini-cli` Ripgrep warning:**
+If you run `gemini` locally on Linux (especially with Linuxbrew or `~/.local/bin` binaries) and see
+`Ripgrep is not available. Falling back to GrepTool.`, it is because `gemini-cli` only trusts strict
+system paths (like `/usr/bin/rg`). To fix this without `sudo`, create a symlink to your local `rg`
+within the gemini module:
+```bash
+mkdir -p ~/.config/nvm/versions/node/v24.15.0/lib/node_modules/@google/gemini-cli/bundle/vendor/ripgrep
+ln -s ~/.local/bin/rg ~/.config/nvm/versions/node/v24.15.0/lib/node_modules/@google/gemini-cli/bundle/vendor/ripgrep/rg-linux-x64
+```
+*(Adjust the node path and `rg-linux-x64` to match your architecture and OS if necessary).*
+
 Backend tools change: CLI flags, exposed capabilities, auth flows, output formats, and session
 behavior can drift. When modifying an adapter, check the current CLI help and verify what is
 possible, especially where a tool previously fell short.
