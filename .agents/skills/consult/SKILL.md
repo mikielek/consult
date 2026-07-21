@@ -60,6 +60,12 @@ Use a trusted personal/global install by absolute path instead, for example
 
 ## Run a consultation
 
+> **OpenAI Codex hosts:** Check the active capabilities before a live consultation. Under Codex's
+> default/restricted sandbox, read `references/codex-permissions.md` and request escalated execution
+> on the first attempt for every live backend; `--list`, top-level `--help`, and `--dry-run` stay
+> sandboxed. If the host explicitly grants both command network access and access to the backend's
+> required auth/config/state paths, run normally without loading the escalation guidance.
+
 Keep your shell at the **project root** so the backend sees the repo being discussed. Invoke the
 dispatcher by its full path under the skill:
 
@@ -165,9 +171,8 @@ does not mean secrecy-preserving. Avoid sending secrets or unnecessary proprieta
 third-party agent; summarize sensitive context or ask the user first. The prompt secret preflight is
 a last-resort guard for obvious pasted credentials, not a general data-loss prevention mechanism.
 
-If your host sandboxes network or auth, run the wrapper outside that sandbox — the CLIs reuse the
-user's existing auth and need network access. **OpenAI Codex** users: see
-`references/codex-permissions.md` for escalated-execution and prefix-approval guidance.
+For OpenAI Codex host execution, follow the capability gate under **Run a consultation** and the
+escalated-execution and prefix-approval guidance in `references/codex-permissions.md`.
 
 ## Using results
 
