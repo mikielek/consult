@@ -151,6 +151,11 @@ Retrospective notes from the trigger/safety tightening work:
   live in `references/<backend>-cli.md`; cross-backend synthesis lives in
   `references/model-discovery.md`, whose Parity table may name minimal auth/listing commands for
   comparison but should not repeat the detailed blocks.
+- Consult deliberately has no environment knobs and no OpenCode server attachment. Watching an
+  OpenCode consult live would mean `--attach <url> --dir "$PWD"` against a running `opencode serve`,
+  which adds daemon lifecycle, remote-directory scoping, and an auth surface to a stateless argv
+  builder; reviewing sessions afterwards (`opencode session list` / `export`) needs no change. See
+  `references/opencode-cli.md`.
 - Mind per-backend touchpoints when adding or removing a backend: besides the adapter, the discovery
   Parity table in `references/model-discovery.md` is one. The canonical add/remove checklist is in
   `references/backend-adapters.md`.
