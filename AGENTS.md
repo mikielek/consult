@@ -179,6 +179,16 @@ Retrospective notes from the trigger/safety tightening work:
   than trusting them. The caller rule in `SKILL.md` is conservative on purpose so that no skill
   behavior depends on the result.
 
+- Personal/global installs are committed snapshots (`git archive "HEAD:.agents/skills/consult"`),
+  not symlinks at a working tree. A symlinked personal install makes every repo's consultations run
+  whatever happens to be checked out here, so a branch switch or a half-written adapter changes the
+  skill everywhere — and the trusted absolute path in `SKILL.md` then resolves into a repo-controlled
+  tree, which is the thing it exists to avoid. The cost is that a snapshot goes stale silently (a
+  real install was found two commits behind), so `INSTALL.md` carries the refresh command. Clear the
+  directory before re-extracting: `tar -x` overlays, and a leftover `scripts/backends/<name>.sh`
+  keeps a removed backend alive in `--list`. Symlinking the working tree is documented as
+  development-only.
+
 ## Commit & Pull Request Guidelines
 
 Author commits with the full name `Michał Kiełkowski` and no email address. The author and
