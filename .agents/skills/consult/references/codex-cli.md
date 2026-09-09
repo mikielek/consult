@@ -45,6 +45,19 @@ files directly.
   one-shot consult through the wrapper to verify actual generation:
   `scripts/consult.sh --to codex --model gpt-5.5 --prompt "hi"`.
 
+## Read scope
+
+Snapshot, not a contract — it turns on the CLI version, the agent/permission defaults, local
+config, and the host sandbox, so re-measure rather than trusting this line.
+
+**Not measured.** On 2026-09-09 the probe could not run on `codex-cli 0.147.0`: `Error: Your access
+token could not be refreshed. Please log out and sign in again.` Re-run it after `codex login`.
+Unlike the other backends, Codex is OS-sandbox-enforced (`-s read-only`) and the adapter passes no
+`-C`/root configuration, so the answer may also depend on the sandbox's default read roots.
+
+Either way, `SKILL.md` requires callers to name only in-tree paths, so nothing in the skill's
+behavior depends on this result. Recipe: `backend-adapters.md` → "Re-measuring read scope".
+
 ## Session persistence
 
 - `--resume latest` → `exec resume --last` (most recent recorded session).

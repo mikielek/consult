@@ -61,7 +61,9 @@ require_prompt() {
 }
 
 # compose_prompt CALLEE -> echoes the prompt to send.
-# Prepends a neutral advisory reviewer framing unless --raw was given.
+# Prepends a neutral advisory reviewer framing unless --raw was given. The framing
+# includes a hedged read-reachability note: SKILL.md tells callers to name only
+# in-tree paths, and this makes a missed case fail loudly instead of guessing.
 # CALLEE (e.g. "Gemini") is injected by the adapter; FROM comes from --from.
 compose_prompt() {
   local callee="$1"
@@ -70,7 +72,8 @@ compose_prompt() {
     return
   fi
   printf 'You are %s, consulting with %s as an independent advisory reviewer.\n' "$callee" "$FROM"
-  printf 'Do not edit files or run destructive commands; treat this as advice to verify locally.\n\n'
+  printf 'Do not edit files or run destructive commands; treat this as advice to verify locally.\n'
+  printf 'Files outside the current working directory may be unreadable; if a path in this prompt is unreachable, say so rather than guessing its contents.\n\n'
   printf '%s' "$PROMPT"
 }
 

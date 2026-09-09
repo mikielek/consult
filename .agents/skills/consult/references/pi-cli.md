@@ -65,6 +65,19 @@ For change reviews, Pi has no Git tool and cannot allowlist `git show` except by
 Do not add shell access for that. Follow Canonical Change Review in `SKILL.md`: the host supplies
 one canonical artifact for every backend to review.
 
+## Read scope
+
+Snapshot, not a contract — it turns on the CLI version, the agent/permission defaults, local
+config, and the host sandbox, so re-measure rather than trusting this line.
+
+On 2026-09-09 with Pi `0.85.1`, an out-of-tree absolute path was **read successfully**:
+`/tmp/consult-reach/probe.txt` returned its marker alongside the in-tree `README.md` control. This
+matches "Read-only model" above — the `read,grep,ls` allowlist restricts *which tools* run, not
+*which paths* they reach.
+
+Either way, `SKILL.md` requires callers to name only in-tree paths, so nothing in the skill's
+behavior depends on this result. Recipe: `backend-adapters.md` → "Re-measuring read scope".
+
 ## Caveats
 
 - Pi has no safe `--` end-of-options delimiter, and its argument parser scans all argv for flags

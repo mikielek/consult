@@ -232,12 +232,25 @@ test_dispatcher_does_not_capture_forwarded_values() {
   assert_stdout_contains "--resume --list"
 }
 
+test_prompt_framing_reachability_note() {
+  run_case --to opencode --dry-run "Review API"
+  assert_status 0
+  assert_stdout_contains "may be unreadable"
+  assert_stdout_contains "say so rather than guessing its contents"
+
+  run_case --to opencode --dry-run --raw --prompt "Review API"
+  assert_status 0
+  assert_stdout_not_contains "may be unreadable"
+  assert_stdout_not_contains "Do not edit files"
+}
+
 run_test "codex dry-run uses read-only sandbox defaults" test_codex_defaults
 run_test "gemini dry-run uses plan approval defaults" test_gemini_defaults
 run_test "claude dry-run uses plan permission defaults" test_claude_defaults
 run_test "opencode dry-run uses plan agent defaults" test_opencode_defaults
 run_test "pi dry-run uses tool allowlist and discovery hardening" test_pi_defaults
 run_test "pi forwards --model to the pi CLI" test_pi_model_forwarding
+run_test "prompt framing carries a hedged reachability note unless --raw" test_prompt_framing_reachability_note
 run_test "raw backend passthrough is rejected" test_passthrough_rejected
 run_test "prompt secret preflight blocks obvious secrets" test_prompt_secret_preflight
 run_test "unknown normalized flags are rejected" test_unknown_flag_rejected

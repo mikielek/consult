@@ -35,6 +35,19 @@ Add `--dry-run` to see the exact resolved `claude` command (plan mode, `--model`
 prompt; the vendor shape is in "Adapter invocation" above). Do not hand-run a raw `claude` probe —
 use the wrapper so the safe defaults and preflight always apply.
 
+## Read scope
+
+Snapshot, not a contract — it turns on the CLI version, the agent/permission defaults, local
+config, and the host sandbox, so re-measure rather than trusting this line.
+
+On 2026-09-09 with `claude 2.1.266`, an out-of-tree absolute path was **read successfully**:
+`/tmp/consult-reach/probe.txt` returned its marker even though it sits outside every declared
+working directory, alongside the in-tree `README.md` control. `--permission-mode plan` gates
+mutation, not read reach.
+
+Either way, `SKILL.md` requires callers to name only in-tree paths, so nothing in the skill's
+behavior depends on this result. Recipe: `backend-adapters.md` → "Re-measuring read scope".
+
 ## Session persistence
 
 - `--resume latest` → `--continue` (most recent conversation in this directory).

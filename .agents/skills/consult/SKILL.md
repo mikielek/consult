@@ -89,8 +89,14 @@ backend-specific, and Pi intentionally rejects consult `--json`:
 The prompt may be passed with `--prompt` or as one positional argument. Use `--prompt` when the text
 starts with `-`. Use `--from`, `--model`, or `--raw` only when needed. There is no
 `--`/passthrough; only documented normalized flags are accepted. See
-`<skill-dir>/scripts/consult.sh --help`. When file context is needed, mention the path directly in
-the prompt, for example `Review README.md and src/client.ts`.
+`<skill-dir>/scripts/consult.sh --help`.
+
+**Name only paths the backend can reach.** The backend inherits your shell's directory, so name
+paths under the project root, as in `Review README.md and src/client.ts`. Treat anything your
+harness or session created outside the tree — plan or scratch files, transcripts, generated diffs,
+`/tmp` logs, another checkout — as unreachable, and don't expect a full absolute or `~` path to
+help. Inline its content in the prompt instead; if it is too large, copy it to an ignored in-tree
+path (confirm with `git check-ignore -q <path>`), name that path, and delete the copy when done.
 
 The wrapper scans the prompt text for a small set of obvious secret patterns before running or
 printing a backend command. It aborts on a match unless `--allow-secrets` is supplied. This preflight
@@ -103,7 +109,7 @@ The dispatcher wraps your prompt with neutral advisory reviewer framing; you sup
 
 ```text
 Goal: <what you want help with>.
-Context: <files, errors, command output, design notes, or constraints>.
+Context: <in-tree paths or inlined excerpts, errors, command output, design notes, or constraints>.
 Return: <the deliverable below>.
 ```
 
@@ -130,11 +136,10 @@ Generate Git-backed artifacts with controlled commands such as:
 For non-Git or generated changes, provide the patch or diff artifact explicitly. Include explicit
 untracked files when they are part of the requested scope; plain `git diff` does not include them.
 
-Inline small artifacts in the prompt. For large artifacts, write a sanitized temporary file and
-provide its absolute readable path. Prefer an out-of-repo temporary path. If sandbox reachability
-requires workspace-local placement, keep it under an ignored or untracked temporary path, and clean
-up only artifacts the host created. The secret preflight scans only the prompt, not artifact files,
-so the host must sanitize file artifacts before sharing them.
+Inline small artifacts in the prompt. For a large artifact, write a sanitized temporary file at an
+ignored in-tree path (see the reachability rule under **Run a consultation**), name that path, and
+clean up only artifacts the host created. The secret preflight scans only the prompt, not artifact
+files, so the host must sanitize file artifacts before sharing them.
 
 Backends may inspect repository files for context, but the supplied artifact defines the change
 scope under review.

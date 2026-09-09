@@ -224,6 +224,17 @@
       ]
     },
     {
+      "id": "output_out_of_tree_path_context",
+      "input": "Review the implementation plan at /home/user/.claude/plans/refactor-auth.md with OpenCode.",
+      "checks": [
+        "Recognizes the plan file as a host-side artifact outside the project root that the backend should not be expected to read by path.",
+        "Does not send an out-of-tree absolute or ~ path as the backend's only route to the content.",
+        "Inlines the plan content or the load-bearing excerpt in the prompt, or copies it to an ignored in-tree path confirmed with git check-ignore -q and names that path.",
+        "Deletes any in-tree copy it created once the consultation is done.",
+        "Reaches a usable consultation on the first live wrapper invocation instead of retrying after a read failure."
+      ]
+    },
+    {
       "id": "output_model_vs_backend_disambiguation",
       "input": "Consult GPT about this API.",
       "checks": [

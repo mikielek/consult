@@ -36,6 +36,21 @@ Add `--dry-run` to see the exact resolved `gemini` command (it includes `--model
 prompt; the approval-gated shape is shown under "Tested Behavior" below). Do not hand-run a raw
 `gemini` probe — use the wrapper so the safe defaults and preflight always apply.
 
+## Read scope
+
+Snapshot, not a contract — it turns on the CLI version, the agent/permission defaults, local
+config, and the host sandbox, so re-measure rather than trusting this line.
+
+On 2026-09-09 with Gemini CLI `0.59.0`, an out-of-tree absolute path was **refused** by a hard
+workspace boundary: `Error executing tool read_file: Path not in workspace: Attempted path
+"/tmp/consult-reach/probe.txt" resolves outside the allowed workspace directories: <repo> or the
+project temp directory: ~/.gemini/tmp/<project>`. It then answered `CANNOT_READ` and read the
+in-tree `README.md` control. Note the second allowed root: Gemini also permits its own per-project
+temp directory, which is outside the repo.
+
+Either way, `SKILL.md` requires callers to name only in-tree paths, so nothing in the skill's
+behavior depends on this result. Recipe: `backend-adapters.md` → "Re-measuring read scope".
+
 ## Tested Behavior
 
 Plain headless prompt from the user's shell:

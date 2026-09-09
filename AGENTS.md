@@ -157,8 +157,27 @@ Retrospective notes from the trigger/safety tightening work:
   builder; reviewing sessions afterwards (`opencode session list` / `export`) needs no change. See
   `references/opencode-cli.md`.
 - Mind per-backend touchpoints when adding or removing a backend: besides the adapter, the discovery
-  Parity table in `references/model-discovery.md` is one. The canonical add/remove checklist is in
+  Parity table in `references/model-discovery.md` and the "Read scope" snapshot in
+  `references/<name>-cli.md` are two. The canonical add/remove checklist is in
   `references/backend-adapters.md`.
+- Out-of-tree paths in a prompt are a caller-guidance problem, not a wrapper problem. `SKILL.md`
+  tells callers to name only paths under the project root and to inline or copy host-side artifacts
+  (plan and scratch files, transcripts, generated diffs, `/tmp` logs, other checkouts); the third
+  framing line in `compose_prompt` is only a hedged safety net for a missed case. Do not add a path
+  reachability preflight to `common.sh`: prompts legitimately *discuss* out-of-tree paths such as
+  `~/.codex/auth.json`, `CONSULT_TRUSTED_PATH`, or a quoted stack trace, and no regex separates
+  discussing a path from asking the backend to read it — it would need a bypass flag, which is the
+  `--file` mistake again. Keep the framing line hedged ("may be unreadable"): measured read scope
+  splits across backends, so an absolute claim would be false for Claude and Pi and could make a
+  capable backend refuse a legitimate read.
+- Per-backend read scope is a dated snapshot, not a contract. Measured 2026-09-09: OpenCode refuses
+  an out-of-tree path as an auto-rejected `external_directory` permission, Gemini refuses it at a
+  hard workspace boundary (but also allows its own `~/.gemini/tmp/<project>` root), Claude and Pi
+  read it fine, and Codex was unmeasured on expired auth. Those answers turn on CLI version,
+  agent/permission defaults, local config, and the host sandbox, so they go stale silently —
+  re-measure with the recipe in `references/backend-adapters.md` ("Re-measuring read scope") rather
+  than trusting them. The caller rule in `SKILL.md` is conservative on purpose so that no skill
+  behavior depends on the result.
 
 ## Commit & Pull Request Guidelines
 

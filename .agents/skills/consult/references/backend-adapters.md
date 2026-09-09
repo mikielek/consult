@@ -53,7 +53,8 @@ The existing adapters are the canonical templates: `claude.sh`, `codex.sh`, `gem
 `opencode.sh`, `pi.sh`. Record observed CLI behavior, tested flags, and caveats for the new backend
 in a `references/<name>-cli.md`, **including a "Model discovery" section** (its auth-signal command,
 any native model-listing command, and the safe wrapper probe `consult.sh --to <name> --model M
---prompt "hi"`). Add **one row** to the discovery Parity table in `references/model-discovery.md`.
+--prompt "hi"`) **and a "Read scope" snapshot** (see "Re-measuring read scope" below). Add **one
+row** to the discovery Parity table in `references/model-discovery.md`.
 Update the backend name lists / frontmatter trigger in `SKILL.md` and `evals/evals.json` only if the
 backend should be a named trigger.
 
@@ -68,3 +69,30 @@ adapter capability — there is no `discover_models()` hook to implement.
   CLI where practical) before documenting flags in `references/<name>-cli.md`.
 - Run `.agents/skills/consult/tests/wrapper.sh` after parser, safety-default, session, JSON, or
   prompt-framing changes. It uses fake backend binaries and should not call a model.
+
+## Re-measuring read scope
+
+Whether a backend can read a path *outside* the project tree differs per backend and is not a
+contract: it turns on the CLI version, the agent/permission defaults, local config, and the host
+sandbox. Each `references/<name>-cli.md` carries a dated "Read scope" snapshot; re-measure it rather
+than trusting it, and re-date it when you do.
+
+The probe **deliberately violates** the reachability rule in `SKILL.md` (which tells callers to name
+only in-tree paths). It is a capability experiment, not a consultation, and it costs a live model
+call per backend plus working backend auth and network.
+
+```bash
+mkdir -p /tmp/consult-reach && printf 'REACH_MARKER_7Q\n' > /tmp/consult-reach/probe.txt
+# from the project root, per backend:
+<cli> --version
+scripts/consult.sh --to <name> --prompt "Read /tmp/consult-reach/probe.txt and reply with exactly its first line, or reply CANNOT_READ if you cannot access it. Then read README.md and reply with its first heading."
+rm -rf /tmp/consult-reach
+```
+
+`REACH_MARKER_7Q` back means the backend reads out of tree. `CANNOT_READ` or a tool error **with the
+README heading still returned** means it is cwd/workspace-scoped — the README half is the control
+that separates "cannot reach that path" from an auth, network, or model failure. Record the CLI
+version and the date.
+
+Nothing in the skill's behavior depends on the result: `SKILL.md`'s caller rule is conservative on
+purpose, so it holds whichever way a backend answers.

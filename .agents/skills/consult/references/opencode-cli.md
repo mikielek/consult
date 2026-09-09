@@ -25,7 +25,7 @@ Also checked official OpenCode docs dated 2026-06-11.
 
 Adapter mapping: `--resume latest` → `--continue`; `--resume <id>` → `--session <id>`;
 `--json` → `--format json`; the prompt is passed positionally last. Consult does not expose
-OpenCode file attachment flags; mention file paths directly in the prompt instead.
+OpenCode file attachment flags; mention in-tree file paths directly in the prompt instead.
 
 ## Model discovery
 
@@ -61,6 +61,20 @@ For strict read-only behavior, configure an OpenCode agent whose permissions den
 `bash`. The consult adapter always uses `--agent plan` and supports no passthrough, so selecting a
 different agent means editing `scripts/backends/opencode.sh` (or invoking `opencode` directly) —
 not a consult flag.
+
+## Read scope
+
+Snapshot, not a contract — it turns on the CLI version, the agent/permission defaults, local
+config, and the host sandbox, so re-measure rather than trusting this line.
+
+On 2026-09-09 with OpenCode `1.18.15`, an out-of-tree absolute path was **refused**: reading
+`/tmp/consult-reach/probe.txt` raised `permission requested: external_directory
+(/tmp/consult-reach/*)`, which is **auto-rejected** headless (`The user rejected permission to use
+this specific tool call.`), while an in-tree `README.md` read succeeded as the control. So an
+out-of-tree path fails as a *permission* rejection, not as "file not found".
+
+Either way, `SKILL.md` requires callers to name only in-tree paths, so nothing in the skill's
+behavior depends on this result. Recipe: `backend-adapters.md` → "Re-measuring read scope".
 
 ## Reviewing Consult Sessions
 
