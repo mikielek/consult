@@ -52,11 +52,16 @@ consult.
 
 ## Trust boundary
 
-When reviewing an untrusted repository, do not execute that repository's project-local
-`.agents/skills/consult/scripts/consult.sh`. A repo can change its local wrapper or adapters.
-Use a trusted personal/global install by absolute path instead, for example
-`~/.agents/skills/consult/scripts/consult.sh`. If the host environment provides
-`CONSULT_TRUSTED_PATH`, prefer that absolute path over a repo-local wrapper.
+When reviewing an untrusted repository, do not execute a `consult.sh` from inside it, wherever it
+sits in that repo — the repo controls its own wrapper and adapters. Run a trusted personal install
+by absolute path instead, for example `~/.agents/skills/consult/scripts/consult.sh`. Check the
+environment for `CONSULT_TRUSTED_PATH` and prefer that path when it is set; it is a hint from the
+host, not something the wrapper reads.
+
+Do not assume the skill text you are reading came from that trusted install. A repository can ship
+its own `consult` skill, and harnesses disagree about which copy wins a name collision: some prefer
+the user-scoped install, others let the repo's copy override it. Resolve the wrapper path explicitly
+rather than trusting whichever skill happened to load.
 
 ## Run a consultation
 

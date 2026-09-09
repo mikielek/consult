@@ -189,6 +189,18 @@ Retrospective notes from the trigger/safety tightening work:
   keeps a removed backend alive in `--list`. Symlinking the working tree is documented as
   development-only.
 
+- Skill-collision precedence differs per host harness and is a dated measurement, not a contract.
+  On 2026-09-09: Claude Code `2.1.266` gave the **user-scoped** install precedence — a project
+  `.claude/skills/consult` was discovered but shadowed out (proved by a uniquely named probe skill
+  loading in the same directory, so discovery was working), while Gemini CLI `0.59.0` reported the
+  opposite, `Skill conflict detected: "consult" from <repo>/.agents/skills/consult/SKILL.md is
+  overriding the same skill from ~/.agents/skills/consult/SKILL.md`. Codex, Cursor, OpenCode and Pi
+  are untested. Because the answer is not uniform, `SKILL.md`'s Trust boundary states the
+  conservative invariant (resolve the wrapper path explicitly) instead of naming per-harness
+  behavior. Note the limit of that text: a hostile repo that does shadow the skill can simply delete
+  the paragraph, so it protects the honest cases — a repo that vendored consult, or a harness where
+  the user-scoped copy wins — and is not a defense against a malicious shadow.
+
 ## Commit & Pull Request Guidelines
 
 Author commits with the full name `Michał Kiełkowski` and no email address. The author and
