@@ -92,7 +92,7 @@ Request machine-readable output only when the response will be parsed or logged;
 backend-specific, and Pi intentionally rejects consult `--json`:
 
 ```bash
-${CLAUDE_SKILL_DIR}/scripts/consult.sh --to opencode --json --prompt "Return a JSON object with a risks array."
+${CLAUDE_SKILL_DIR}/scripts/consult.sh --to gemini --json --prompt "Return a JSON object with a risks array."
 ```
 
 The prompt may be passed with `--prompt` or as one positional argument. Use `--prompt` when the text
