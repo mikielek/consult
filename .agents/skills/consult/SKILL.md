@@ -20,10 +20,14 @@ The user usually names one ("ask Gemini", "cross-check with OpenCode"). Selectin
 is a trust, auth, and harness choice — not just model routing — so resolve it explicitly:
 
 ```bash
-<skill-dir>/scripts/consult.sh --list
+${CLAUDE_SKILL_DIR}/scripts/consult.sh --list
 ```
 
-`<skill-dir>` is this skill's base directory, for example `.agents/skills/consult` in this repo.
+`${CLAUDE_SKILL_DIR}` is this skill's base directory; Claude Code substitutes it automatically to
+the loaded instance. Never locate `consult.sh` by searching the filesystem — a personal and a
+project-scoped install can coexist, and a search (or an unresolved `${CLAUDE_SKILL_DIR}` reaching a
+shell, which silently expands to empty) can run the wrong or a nonexistent script. On a harness
+without this substitution, resolve it to the directory of the `SKILL.md` you were just given.
 `--list` shows available adapters and whether their CLIs are on `PATH`. "Installed" does not imply
 authenticated; the CLIs reuse the user's existing auth and need network access.
 
@@ -75,26 +79,26 @@ Keep your shell at the **project root** so the backend sees the repo being discu
 dispatcher by its full path under the skill:
 
 ```bash
-<skill-dir>/scripts/consult.sh --to gemini --prompt "<your consultation>"
+${CLAUDE_SKILL_DIR}/scripts/consult.sh --to gemini --prompt "<your consultation>"
 ```
 
 Preview the exact backend command without executing (useful to confirm or to show the user):
 
 ```bash
-<skill-dir>/scripts/consult.sh --to gemini --dry-run --prompt "<your consultation>"
+${CLAUDE_SKILL_DIR}/scripts/consult.sh --to gemini --dry-run --prompt "<your consultation>"
 ```
 
 Request machine-readable output only when the response will be parsed or logged; shapes are
 backend-specific, and Pi intentionally rejects consult `--json`:
 
 ```bash
-<skill-dir>/scripts/consult.sh --to opencode --json --prompt "Return a JSON object with a risks array."
+${CLAUDE_SKILL_DIR}/scripts/consult.sh --to opencode --json --prompt "Return a JSON object with a risks array."
 ```
 
 The prompt may be passed with `--prompt` or as one positional argument. Use `--prompt` when the text
 starts with `-`. Use `--from`, `--model`, or `--raw` only when needed. There is no
 `--`/passthrough; only documented normalized flags are accepted. See
-`<skill-dir>/scripts/consult.sh --help`.
+`${CLAUDE_SKILL_DIR}/scripts/consult.sh --help`.
 
 **Name only paths the backend can reach.** The backend inherits your shell's directory, so name
 paths under the project root, as in `Review README.md and src/client.ts`. Treat anything your
