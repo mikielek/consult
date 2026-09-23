@@ -120,9 +120,18 @@ Retrospective notes from the trigger/safety tightening work:
 - Pi consult `--json` is intentionally unsupported because Pi JSON mode emits verbose JSONL
   tool/thinking events while plain `pi -p` prints the final response. Do not re-add `--mode json`
   unless a caller is prepared to consume that event stream.
-- Pi has no safe `--` end-of-options delimiter. The adapter rejects `--raw --prompt` values starting
-  with `-` or `@`; test those exact forms because a positional `-...` prompt fails earlier in common
-  parsing.
+- Pi has no safe `--` end-of-options delimiter. Its adapter used to be the only one guarding a
+  `--raw --prompt` value beginning with `-` or `@`, which left the guarantee untrue for every other
+  positional-prompt backend: `--raw --prompt "--some-cli-flag"` reached the backend argv as an
+  option and could shape permissions, exactly what the absent `--` passthrough prevents. That is now
+  `common.sh`'s `guard_positional_prompt`, called by Claude, Codex, OpenCode, Pi and Qoder; Gemini is
+  exempt because it binds the prompt to a `-p` value. Test the `-` and `@` forms — a positional
+  `-...` prompt fails earlier in common parsing, and a non-raw `-...` prompt must keep working,
+  because composed prompts always start with the framing. Do not "fix" this by emitting a real `--`
+  delimiter: measured 2026-09-24, `claude -- <token>` read the token as prompt text and answered it
+  live, `codex -- <token>` got past option parsing and failed only on `stdin is not a terminal`, and
+  `opencode --` re-quoted the token into the Bun argv rather than honoring it. Per-CLI delimiters are
+  exactly the drift this skill should not depend on.
 - The prompt secret preflight is intentionally narrow: scan only the normalized `PROMPT` payload,
   run before dry-run can print the backend command, and do not scan repository files.
   `--allow-secrets` is the explicit escape hatch.

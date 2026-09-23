@@ -15,6 +15,7 @@ parse_common_args "$@"
 require_prompt
 
 [[ -z "$SESSION_ID" ]] || die "codex assigns its own session id; use --resume latest or --resume <id>"
+guard_positional_prompt "Codex" "-"
 
 prompt="$(compose_prompt "Codex")"
 

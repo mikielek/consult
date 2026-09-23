@@ -45,6 +45,15 @@ An adapter:
    mutation-restricted defaults appropriate to that CLI (OS sandbox, plan/approval mode, or a tool
    allowlist — see the per-backend `references/<name>-cli.md`). Reject flag combinations the
    backend can't honor, such as conflicting `--resume` and `--session-id` values.
+
+   If the backend takes the prompt **positionally**, call `guard_positional_prompt "<Callee>" "-"`
+   (plus any other leading character that CLI parses specially, such as Pi's `@`) right after
+   `require_prompt`. A positional argument whose first token begins with `-` is parsed as a backend
+   option, so `--raw` would otherwise hand a caller a route to the capability-shaping flags that
+   the missing `--` passthrough exists to block. Backends that bind the prompt to an option value
+   (Gemini's `-p PROMPT`) do not need it. Prefer this rejection over emitting a real `--`: these
+   CLIs disagree about the delimiter — `qoder --help` misreports its own mode choices, and
+   `opencode --` was observed re-quoting the token into the Bun argv instead of honoring it.
 5. Hands the command to `run_or_print "${cmd[@]}"`, which prints it under `--dry-run` or `exec`s it
    with stdin closed (`</dev/null`) to stay non-interactive. `cmd[0]` must be the backend's base
    binary (not a wrapper like `npx`) so the `command -v` install check is accurate.

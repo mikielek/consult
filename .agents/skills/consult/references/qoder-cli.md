@@ -90,6 +90,8 @@ behavior depends on this result. Recipe: `backend-adapters.md` → "Re-measuring
 - Several capability-shaping flags exist but are deliberately unreachable (no `--` passthrough):
   `--permission-mode bypass_permissions`, `--dangerously-skip-permissions`, `--tools`,
   `--allowed-tools`, `--disallowed-tools`, `--add-dir`, `--attachment`, `--mcp-config`, `--agent`,
-  `--system-prompt`, `--worktree`, `--remote`.
+  `--system-prompt`, `--worktree`, `--remote`. The prompt is positional, so `common.sh` also rejects
+  a `--raw` prompt beginning with `-`; without that guard, `--raw` would be a route into that same
+  flag set.
 - `-w/--cwd` would move the backend off the project root; consult relies on the caller's shell being
   at the project root instead.

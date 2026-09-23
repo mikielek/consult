@@ -29,7 +29,9 @@ Normalized options (a backend may not support all of them):
   -r, --resume VALUE  Continue a prior session ("latest" or a session id).
       --session-id ID Start a session with an explicit id (backend permitting).
   -m, --model MODEL   Use a specific model.
-      --raw           Send --prompt verbatim, skipping the reviewer framing.
+      --raw           Send --prompt verbatim, skipping the reviewer framing. A raw
+                      prompt cannot begin with '-' (or '@' on Pi) where the backend
+                      takes the prompt positionally, since the CLI would parse it.
       --allow-secrets Bypass the prompt secret preflight after explicit review.
       --dry-run       Print the resolved backend command without running it.
   -h, --help          Show this help.

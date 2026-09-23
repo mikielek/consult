@@ -14,6 +14,7 @@ parse_common_args "$@"
 require_prompt
 
 [[ -n "$RESUME" && -n "$SESSION_ID" ]] && die "use either --resume or --session-id, not both"
+guard_positional_prompt "Claude" "-"
 
 prompt="$(compose_prompt "Claude")"
 

@@ -14,6 +14,7 @@ parse_common_args "$@"
 require_prompt
 
 [[ -z "$SESSION_ID" ]] || die "opencode does not support --session-id; use --resume <session-id>"
+guard_positional_prompt "OpenCode" "-"
 
 prompt="$(compose_prompt "OpenCode")"
 

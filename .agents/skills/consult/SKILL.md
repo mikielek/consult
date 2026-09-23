@@ -110,7 +110,9 @@ ${CLAUDE_SKILL_DIR}/scripts/consult.sh --to gemini --json --prompt "Return a JSO
 
 The prompt may be passed with `--prompt` or as one positional argument. Use `--prompt` when the text
 starts with `-`. Use `--from`, `--model`, or `--raw` only when needed. There is no
-`--`/passthrough; only documented normalized flags are accepted. See
+`--`/passthrough; only documented normalized flags are accepted. A `--raw` prompt additionally
+cannot start with `-` (or `@` on Pi) for backends that take the prompt positionally — drop `--raw` or
+reword it, since the framing keeps a composed prompt from ever beginning with a flag. See
 `${CLAUDE_SKILL_DIR}/scripts/consult.sh --help`.
 
 **Name only paths the backend can reach.** The backend inherits your shell's directory, so name
@@ -190,8 +192,9 @@ discovery-hardened (not an OS sandbox). Per-backend safety mechanisms are detail
 `references/<backend>-cli.md`.
 
 Safety is also structural: the adapters accept only the documented normalized flags (no `--`
-passthrough), so callers can't inject permission- or capability-shaping flags, and commands are
-built as argv arrays with no shell eval.
+passthrough) and reject a `--raw` prompt whose first character the backend would parse as a flag or
+include, so callers can't inject permission- or capability-shaping flags. Commands are built as argv
+arrays with no shell eval.
 
 All backends can still read accessible project files and return their contents. Mutation-restricted
 does not mean secrecy-preserving. Avoid sending secrets or unnecessary proprietary data to a

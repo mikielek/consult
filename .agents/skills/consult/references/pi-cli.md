@@ -81,8 +81,10 @@ behavior depends on this result. Recipe: `backend-adapters.md` → "Re-measuring
 ## Caveats
 
 - Pi has no safe `--` end-of-options delimiter, and its argument parser scans all argv for flags
-  and `@file` includes. The adapter rejects `--raw` prompts beginning with `-` or `@` so a raw
-  prompt cannot be interpreted as a Pi flag, session picker, project-trust flag, or file include.
+  and `@file` includes. `common.sh`'s `guard_positional_prompt` rejects `--raw` prompts beginning
+  with `-`, and Pi adds `@`, so a raw prompt cannot be interpreted as a Pi flag, session picker,
+  project-trust flag, or file include. Pi was the first backend guarded this way; Claude, Codex,
+  OpenCode and Qoder now share the same helper for the `-` case.
 - A raw single-string prompt such as `"--tools bash"` is not a read-only bypass because Pi only
   honors `--tools` as its own argv token with a separate value.
 - Pi attempts to acquire locks under its config directory, such as `settings.json.lock` and

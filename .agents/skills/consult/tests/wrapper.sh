@@ -216,14 +216,29 @@ test_resume_session_conflicts() {
   done
 }
 
-test_pi_raw_prompt_guards() {
-  run_case --to pi --dry-run --raw --prompt "-starts-with-dash"
-  assert_status 2
-  assert_stderr_contains "a --raw prompt cannot begin with '-' or '@'"
+test_raw_prompt_flag_guard() {
+  local backend
+  # Every backend that receives the prompt positionally must refuse a --raw prompt that
+  # starts with '-', or the first prompt token would reach the CLI as a flag.
+  for backend in claude codex opencode pi qoder; do
+    run_case --to "$backend" --dry-run --raw --prompt "--model x"
+    assert_status 2
+    assert_stderr_contains "a --raw prompt cannot begin with '-' for"
+  done
 
-  run_case --to pi --dry-run --raw --prompt "@starts-with-at"
+  # Pi also reads a leading '@' as a file include.
+  run_case --to pi --dry-run --raw --prompt "@README.md"
   assert_status 2
-  assert_stderr_contains "a --raw prompt cannot begin with '-' or '@'"
+  assert_stderr_contains "a --raw prompt cannot begin with '@' for Pi"
+
+  # Framed prompts cannot begin with a flag, so the same text stays usable without --raw.
+  run_case --to claude --dry-run --prompt "-dash prompt"
+  assert_status 0
+  assert_stdout_contains "-dash prompt"
+
+  # Gemini binds the prompt to -p, so a leading '-' is already an option value, not a flag.
+  run_case --to gemini --dry-run --raw --prompt "--model x"
+  assert_status 0
 }
 
 test_pi_json_rejected() {
@@ -283,7 +298,7 @@ run_test "unknown normalized flags are rejected" test_unknown_flag_rejected
 run_test "invalid backend names are rejected" test_invalid_backend_rejected
 run_test "unknown backend names are rejected" test_unknown_backend_rejected
 run_test "resume and session-id conflicts fail where both exist" test_resume_session_conflicts
-run_test "pi raw prompts cannot begin with dash or at sign" test_pi_raw_prompt_guards
+run_test "raw prompts cannot begin with a flag where the prompt is positional" test_raw_prompt_flag_guard
 run_test "pi rejects consult json mode" test_pi_json_rejected
 run_test "positional prompts work with dash caveat" test_positional_prompt_and_dash_caveat
 run_test "dispatcher does not capture forwarded option values" test_dispatcher_does_not_capture_forwarded_values

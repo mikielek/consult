@@ -17,6 +17,7 @@ require_prompt
 
 # The CLI rejects this pair too, unless --fork-session (unreachable from consult) is added.
 [[ -n "$RESUME" && -n "$SESSION_ID" ]] && die "use either --resume or --session-id, not both"
+guard_positional_prompt "Qoder" "-"
 
 prompt="$(compose_prompt "Qoder")"
 

@@ -60,6 +60,32 @@ require_prompt() {
   [[ "$ALLOW_SECRETS" -eq 1 ]] || scan_for_secrets "$PROMPT"
 }
 
+# guard_positional_prompt CALLEE PREFIX... -> reject a --raw prompt that a backend would
+# not read as prompt text.
+#
+# Most backends take the prompt as a positional argument, and their option parsers scan
+# every argv position: a leading '-' is read as a backend flag, so `--raw --prompt
+# "--some-backend-option"` would reintroduce exactly the flag injection that the absent
+# '--' passthrough exists to prevent. Pi additionally treats a leading '@' as a file
+# include. Composed prompts always start with the reviewer framing, so --raw is the only
+# route to such a value; backends that pass the prompt as an option value (gemini -p) do
+# not need this. Deliberately a rejection rather than a '--' delimiter: --help and the
+# parsers disagree across these CLIs, and opencode was observed re-quoting '--' into the
+# Bun argv rather than honouring it.
+guard_positional_prompt() {
+  local callee="$1"
+  shift
+  [[ "$RAW" -eq 1 ]] || return 0
+  local lead
+  for lead in "$@"; do
+    case "$PROMPT" in
+      "$lead"*)
+        die "a --raw prompt cannot begin with '$lead' for $callee; the CLI would parse it as a flag or include rather than prompt text - drop --raw or reword the prompt"
+        ;;
+    esac
+  done
+}
+
 # compose_prompt CALLEE -> echoes the prompt to send.
 # Prepends a neutral advisory reviewer framing unless --raw was given. The framing
 # includes a hedged read-reachability note: SKILL.md tells callers to name only

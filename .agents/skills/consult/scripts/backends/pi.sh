@@ -20,11 +20,7 @@ require_prompt
 
 prompt="$(compose_prompt "Pi")"
 
-if [[ "$RAW" -eq 1 ]]; then
-  if [[ "$prompt" == -* || "$prompt" == @* ]]; then
-    die "pi has no end-of-options delimiter; a --raw prompt cannot begin with '-' or '@' (it would be parsed as a pi flag or file include) - reword it"
-  fi
-fi
+guard_positional_prompt "Pi" "-" "@"
 
 cmd=(
   pi -p
