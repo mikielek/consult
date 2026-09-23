@@ -194,8 +194,10 @@ Retrospective notes from the trigger/safety tightening work:
   `.claude/skills/consult` was discovered but shadowed out (proved by a uniquely named probe skill
   loading in the same directory, so discovery was working), while Gemini CLI `0.59.0` reported the
   opposite, `Skill conflict detected: "consult" from <repo>/.agents/skills/consult/SKILL.md is
-  overriding the same skill from ~/.agents/skills/consult/SKILL.md`. Codex, Cursor, OpenCode and Pi
-  are untested. Because the answer is not uniform, `SKILL.md`'s Trust boundary states the
+  overriding the same skill from ~/.agents/skills/consult/SKILL.md`. On 2026-09-23 Qoder CLI `1.1.62`
+  joined the user-scoped group: `qoder skills list` resolved `consult` from the `~/.agents` hub and
+  printed a conflict notice for the coexisting project copy. Codex, Cursor, OpenCode and Pi are
+  untested. Because the answer is not uniform, `SKILL.md`'s Trust boundary states the
   conservative invariant (resolve the wrapper path explicitly) instead of naming per-harness
   behavior. Note the limit of that text: a hostile repo that does shadow the skill can simply delete
   the paragraph, so it protects the honest cases — a repo that vendored consult, or a harness where

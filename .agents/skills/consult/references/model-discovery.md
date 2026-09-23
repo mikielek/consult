@@ -28,7 +28,7 @@ candidate-gathering; only a probe verifies reachability.
 These are **non-mutating diagnostics**: they don't change the repo, but a CLI may use its own
 auth/config/session store or network (e.g. Pi takes a config lock; `gemini --list-sessions` is local
 session-store liveness, not provider auth). The agent must **never hand-inspect credential or config
-files** (`~/.codex/auth.json`, `~/.anthropic/`, `.claude/`, session logs, …) to discover or pick a
+files** (`~/.codex/auth.json`, `~/.anthropic/`, `~/.qoder/`, `.claude/`, session logs, …) to discover or pick a
 model — use only the documented CLI subcommands, which reach auth through the CLI's normal
 mechanisms. This mirrors `SKILL.md` ("Model discovery is candidate-gathering, not routing").
 
@@ -69,6 +69,7 @@ removing a backend is a one-row edit here; see `backend-adapters.md`.)
 | codex | `codex doctor` (auth mode) | `codex debug models [--bundled]` | Yes (JSON) | Native raw catalog, not entitlement-checked |
 | claude | `claude whoami` | none native | No | Authenticated account, no model listing |
 | gemini | none explicit (`--list-sessions` = local liveness) | none native | No | Binary/session liveness, not provider auth |
+| qoder | `qoder whoami` (prints the signed-in account) | `qoder --list-models` (account-scoped names) | No | Authenticated account-scoped candidate listing |
 
 Discovery levels (stable labels for reporting):
 
@@ -78,7 +79,7 @@ Discovery levels (stable labels for reporting):
 | `auth-signal` | CLI reports credentials/account state (`claude whoami`, `codex doctor`) |
 | `local-liveness` | CLI reads local state but provider auth unproven (`gemini --list-sessions`) |
 | `native-catalog` | CLI lists candidates, not entitlement (`codex debug models`) |
-| `authenticated-listing` | CLI lists candidates scoped to configured providers (`opencode models`, `pi --list-models`) |
+| `authenticated-listing` | CLI lists candidates scoped to configured providers or the signed-in account (`opencode models`, `pi --list-models`, `qoder --list-models`) |
 | `verified-reachable` | A minimal probe succeeded |
 
 ## Reporting findings
@@ -108,6 +109,11 @@ Takeaways: (1) listing != reachability — at least 3 of 91 opencode ids failed 
 billing/tier/project reasons; (2) the same model has different ids per backend (`claude-sonnet-4-6`
 vs `opencode/claude-sonnet-4-6` vs `google-vertex-anthropic/claude-sonnet-4-6@default`); (3) only
 opencode/pi/codex expose any native listing — claude/gemini rely on known ids plus a probe.
+
+> This table predates the `qoder` backend (added 2026-09), so it has no qoder row and takeaway (3) is
+> stale as written: `qoder --list-models` is account-scoped native listing, joining opencode/pi/codex.
+> Qoder was not probed for model-count or per-model failures here, so re-run the sweep rather than
+> extending these counts by analogy.
 
 ## Deferred: scripted `--discover`
 

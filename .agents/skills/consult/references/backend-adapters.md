@@ -50,13 +50,20 @@ An adapter:
    binary (not a wrapper like `npx`) so the `command -v` install check is accurate.
 
 The existing adapters are the canonical templates: `claude.sh`, `codex.sh`, `gemini.sh`,
-`opencode.sh`, `pi.sh`. Record observed CLI behavior, tested flags, and caveats for the new backend
-in a `references/<name>-cli.md`, **including a "Model discovery" section** (its auth-signal command,
-any native model-listing command, and the safe wrapper probe `consult.sh --to <name> --model M
---prompt "hi"`) **and a "Read scope" snapshot** (see "Re-measuring read scope" below). Add **one
-row** to the discovery Parity table in `references/model-discovery.md`.
+`opencode.sh`, `pi.sh`, `qoder.sh`. Record observed CLI behavior, tested flags, and caveats for the
+new backend in a `references/<name>-cli.md`, **including a "Model discovery" section** (its
+auth-signal command, any native model-listing command, and the safe wrapper probe `consult.sh --to
+<name> --model M --prompt "hi"`) **and a "Read scope" snapshot** (see "Re-measuring read scope"
+below). Add **one row** to the discovery Parity table in `references/model-discovery.md`.
 Update the backend name lists / frontmatter trigger in `SKILL.md` and `evals/evals.json` only if the
 backend should be a named trigger.
+
+When a backend's `--help` and its argument parser disagree, trust the parser and record the
+disagreement. `qoder --help` omits `plan` from the `--permission-mode` choices the binary actually
+accepts, so an adapter authored from help text alone would have missed the mode that makes the
+backend read-only. Force the discrepancy into the open by passing a value you know is invalid — the
+resulting "Invalid values" error echoes the real choice set (`--output-format bogus` is safe: the
+parser rejects it before any model call).
 
 Discovery itself is a documented **manual** workflow (`references/model-discovery.md`), not a scripted
 adapter capability — there is no `discover_models()` hook to implement.

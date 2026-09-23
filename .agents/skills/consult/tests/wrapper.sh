@@ -15,7 +15,7 @@ trap cleanup EXIT
 
 FAKE_BIN="$TMP_DIR/bin"
 mkdir -p "$FAKE_BIN"
-for bin in codex gemini claude opencode pi; do
+for bin in codex gemini claude opencode pi qoder; do
   cat >"$FAKE_BIN/$bin" <<'STUB'
 #!/usr/bin/env bash
 printf 'unexpected live backend invocation: %s\n' "$0" >&2
@@ -81,12 +81,36 @@ assert_stderr_not_contains() {
   [[ "$LAST_STDERR" != *"$unexpected"* ]] || fail "stderr contained unexpected text: $unexpected"
 }
 
+assert_before() {
+  local earlier="$1" later="$2"
+  local head="${LAST_STDOUT%%"$later"*}"
+  [[ "$head" != "$LAST_STDOUT" ]] || fail "stdout did not contain: $later"
+  [[ "$head" == *"$earlier"* ]] || fail "expected '$earlier' to appear before '$later'"
+}
+
 run_test() {
   CURRENT_TEST="$1"
   shift
   "$@"
   PASS_COUNT=$((PASS_COUNT + 1))
   printf 'ok - %s\n' "$CURRENT_TEST"
+}
+
+test_qoder_defaults() {
+  run_case --to qoder --dry-run "Review API"
+  assert_status 0
+  assert_stdout_contains "qoder -p --permission-mode plan"
+  assert_stdout_contains "Do not edit files"
+}
+
+test_qoder_json_and_model() {
+  run_case --to qoder --dry-run --json --model Qwen3.8-Max "Review API"
+  assert_status 0
+  assert_stdout_contains "-o json"
+  assert_stdout_contains "--model Qwen3.8-Max"
+  # qoder takes the prompt as a variadic positional query, so every option must be
+  # resolved before it; a flag emitted after the prompt could be swallowed by the query.
+  assert_before "--permission-mode plan" "Review API"
 }
 
 test_codex_defaults() {
@@ -185,7 +209,7 @@ test_unknown_backend_rejected() {
 
 test_resume_session_conflicts() {
   local backend
-  for backend in gemini claude pi; do
+  for backend in gemini claude pi qoder; do
     run_case --to "$backend" --dry-run --resume abc --session-id def "Review API"
     assert_status 2
     assert_stderr_contains "use either --resume or --session-id"
@@ -249,6 +273,8 @@ run_test "gemini dry-run uses plan approval defaults" test_gemini_defaults
 run_test "claude dry-run uses plan permission defaults" test_claude_defaults
 run_test "opencode dry-run uses plan agent defaults" test_opencode_defaults
 run_test "pi dry-run uses tool allowlist and discovery hardening" test_pi_defaults
+run_test "qoder dry-run uses plan permission defaults" test_qoder_defaults
+run_test "qoder resolves json, model, and prompt ordering" test_qoder_json_and_model
 run_test "pi forwards --model to the pi CLI" test_pi_model_forwarding
 run_test "prompt framing carries a hedged reachability note unless --raw" test_prompt_framing_reachability_note
 run_test "raw backend passthrough is rejected" test_passthrough_rejected

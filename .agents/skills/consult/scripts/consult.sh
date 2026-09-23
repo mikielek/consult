@@ -35,8 +35,9 @@ Normalized options (a backend may not support all of them):
   -h, --help          Show this help.
 
 Notes:
-  --json output is backend-specific: Codex emits JSONL events, Gemini/Claude/
-  OpenCode use their CLI formats, and Pi rejects consult --json.
+  --json output is backend-specific: Codex emits JSONL events, Gemini/Claude/Qoder/
+  OpenCode use their CLI formats (Qoder returns one JSON result object on stdout,
+  with notices on stderr), and Pi rejects consult --json.
   Backend output is printed directly and may be truncated by the host UI.
   Exit 2 indicates wrapper validation or setup failure; live backend exits pass
   through otherwise.

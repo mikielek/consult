@@ -48,6 +48,15 @@
       }
     },
     {
+      "id": "trigger_explicit_qoder",
+      "input": "Ask Qoder to cross-check this change for risks.",
+      "expected": {
+        "should_trigger": true,
+        "backend": "qoder",
+        "reason": "\"Qoder\" names the Qoder backend (a product), not the Qwen model family, so it routes to --to qoder without a --model hint and must not be read as a model/provider constraint. When the host is itself Qoder, the consultation still runs but the agent should note that the sub-session shares the same account, models and skills, so it is an independent answer rather than an independent vendor."
+      }
+    },
+    {
       "id": "trigger_multi_agent_debate",
       "input": "Have Gemini and Pi discuss this architecture for two rounds, then synthesize the tradeoffs.",
       "expected": {

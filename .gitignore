@@ -38,4 +38,5 @@ __pycache__/
 .codex/
 .cursor/
 .gemini/
+.qoder/
 

@@ -3,7 +3,8 @@
 `consult` is an Agent Skills-compatible skill for asking another coding agent for an independent,
 advisory consultation with mutation-restricted defaults: review, brainstorming pass, debugging
 partner, or second opinion. A host agent can use it to involve installed backends including Gemini,
-OpenCode, Claude, Codex, and Pi without making the user think about the underlying command wrapper.
+OpenCode, Claude, Codex, Pi, and Qoder without making the user think about the underlying command
+wrapper.
 
 The canonical skill lives at:
 
@@ -79,6 +80,9 @@ Run deterministic wrapper checks:
 - Consultations are advisory; verify claims locally before acting on them.
 - The strongest read-only guarantee is the Codex backend's OS sandbox. Other backends use
   approval, plan, or tool allowlist controls as documented in the skill references.
-- `--json` output shape is backend-specific; Gemini, Claude, and OpenCode use their CLI formats,
-  Codex emits JSONL events, and Pi intentionally rejects consult `--json`.
+- `--json` output shape is backend-specific; Gemini, Claude, Qoder, and OpenCode use their CLI
+  formats, Codex emits JSONL events, and Pi intentionally rejects consult `--json`.
+- The `qoder` backend is often the same product as the host agent. A Qoder consultation starts a
+  fresh session, so it is an independent answer, but it shares your account, models, and skills
+  rather than being a different vendor.
 - The project is licensed under Apache-2.0. See `LICENSE` and `NOTICE`.

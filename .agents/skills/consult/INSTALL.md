@@ -1,7 +1,7 @@
 # Installing the `consult` skill across agents
 
 This skill follows the **Agent Skills** open standard (`SKILL.md`), read by Claude Code, OpenAI
-Codex, Gemini CLI, OpenCode, Cursor, Goose, Kiro, and others.
+Codex, Gemini CLI, OpenCode, Cursor, Qoder CLI, Goose, Kiro, and others.
 
 ## Canonical source
 
@@ -94,11 +94,14 @@ export CONSULT_TRUSTED_PATH="$HOME/.agents/skills/consult/scripts/consult.sh"
   adapters do not need the exec bit. If a `cp` drops the bit on `consult.sh`, either
   `chmod +x scripts/consult.sh` or invoke it as `bash scripts/consult.sh ...`.
 - **Which agents need a spoke**: Gemini CLI reads `~/.agents/skills/` natively (it reports a skill
-  conflict when a project copy shadows the hub), so it needs no symlink. Pi has no skills
-  *directory* — it takes `--skill <path>` — and the consult adapter passes `--no-skills`, so a
+  conflict when a project copy shadows the hub), so it needs no symlink. Qoder CLI is the same: on
+  2026-09-23 `qoder skills list` resolved `consult` from `~/.agents/skills/consult/SKILL.md` with no
+  symlink, and it reported a skill-name conflict when this repo also carried a project copy. Pi has no
+  skills *directory* — it takes `--skill <path>` — and the consult adapter passes `--no-skills`, so a
   consultation never loads skills either way; do not create `~/.pi/skills`.
 - **Backend CLIs**: each backend needs its CLI installed and authenticated (`gemini`, `opencode`,
-  `claude`, `codex`, `pi`). `consult.sh --list` only reports whether a CLI is on `PATH` — not whether
-  it is authenticated or which models it can actually run; see `references/model-discovery.md` for the
-  on-demand auth/model checks. Add a backend by dropping `scripts/backends/<name>.sh`; remove one by
-  deleting the file. See `references/backend-adapters.md` for the full adapter-authoring guide.
+  `claude`, `codex`, `pi`, `qoder`). `consult.sh --list` only reports whether a CLI is on `PATH` —
+  not whether it is authenticated or which models it can actually run; see
+  `references/model-discovery.md` for the on-demand auth/model checks. Add a backend by dropping
+  `scripts/backends/<name>.sh`; remove one by deleting the file. See
+  `references/backend-adapters.md` for the full adapter-authoring guide.
