@@ -97,6 +97,9 @@ callers. The adapter therefore reports the id of a fresh run:
 - `--resume <id>` prints `consult-session: <id>` before running; `--resume latest` prints a warning and
   no id line, since the continued session's id is not resolvable without a title.
 - Only fresh runs leave `exec` (`run_capture_status` in `common.sh`); resumed runs still `exec`.
+  Interrupting a fresh run: the first INT/TERM/HUP forwards TERM and suppresses the id line; a second
+  escalates to KILL, which cannot free a hung grandchild (see `backend-adapters.md`). Terminal
+  Ctrl-C also reaches opencode directly (shared process group).
 
 ## Reviewing Consult Sessions
 

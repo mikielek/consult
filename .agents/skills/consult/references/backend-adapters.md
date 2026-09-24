@@ -60,8 +60,11 @@ An adapter:
    cannot report its own session id may instead use the opt-in `run_capture_status` for **fresh**
    runs (`opencode.sh`: unique `--title`, then a post-run id lookup on stderr). It runs the child in
    the background so INT/TERM/HUP are forwarded and returns its exact status, so call it as
-   `run_capture_status ... || rc=$?`. `opencode.sh` is therefore not the minimal template; under
-   `--dry-run` it prints a placeholder title.
+   `run_capture_status ... || rc=$?`. A first signal forwards TERM (reaped status usually 143); a
+   repeated one escalates to KILL (137). KILL reaches only the direct child — a hung grandchild
+   would survive it; a process-group kill (setsid + `kill -- -pgid`) was rejected as opencode-
+   specific scope creep. `opencode.sh` is therefore not the minimal template; under `--dry-run` it
+   prints a placeholder title.
 
 ### Session-concurrency contract (required for every backend)
 

@@ -150,10 +150,12 @@ report_known_session() {
 
 # run_capture_status CMD... -> run CMD live without exec so the adapter can act afterwards.
 # Opt-in for backends that cannot report their own session id; call as
-# `run_capture_status ... || rc=$?` (errexit-safe). Returns the child's exact status, or
-# 128+n after a forwarded INT/TERM/HUP, and sets CAPTURE_INTERRUPTED=1 in that case. The child
-# runs in the background because bash defers a trapped signal until a foreground child exits,
-# which would keep the trap from forwarding anything.
+# `run_capture_status ... || rc=$?` (errexit-safe). The first INT/TERM/HUP forwards TERM and sets
+# CAPTURE_INTERRUPTED=1; a repeated signal escalates to KILL, so the reaped child status is usually
+# 143 (128+TERM) after one signal or 137 (128+KILL) after escalation. The child runs in the
+# background because bash defers a trapped signal until a foreground child exits, which would keep
+# the trap from forwarding anything. KILL reaches only the direct child, not any grandchild it
+# spawned; a process-group kill was rejected as scope creep (see references/backend-adapters.md).
 run_capture_status() {
   [[ $# -gt 0 ]] || die "internal error: empty command"
   command -v "$1" >/dev/null 2>&1 || die "'$1' is not on PATH; install the $1 CLI (and authenticate it) to use this backend"
@@ -161,7 +163,8 @@ run_capture_status() {
   local child rc=0
   "$@" </dev/null &
   child=$!
-  trap 'CAPTURE_INTERRUPTED=1; kill -TERM "$child" 2>/dev/null' INT TERM HUP
+  # || true: the child may already be gone, and a failed kill would trip the callers' errexit.
+  trap 'if [[ "$CAPTURE_INTERRUPTED" -eq 0 ]]; then CAPTURE_INTERRUPTED=1; kill -TERM "$child" 2>/dev/null || true; else kill -KILL "$child" 2>/dev/null || true; fi' INT TERM HUP
   while :; do
     wait "$child" && rc=0 || rc=$?
     kill -0 "$child" 2>/dev/null || break

@@ -290,7 +290,7 @@ CAP_STATE="$TMP_DIR/capstate"
 BAD_JQ_BIN="$TMP_DIR/badjq"
 
 # Fake opencode that records what `run` received (title, stdin) and answers
-# `session list --format json`. FAKE_OPENCODE_EXIT / _LIST / _SLEEP steer it.
+# `session list --format json`. FAKE_OPENCODE_EXIT / _LIST / _SLEEP / _IGNORE_TERM steer it.
 install_capture_stub() {
   mkdir -p "$CAP_BIN" "$BAD_JQ_BIN"
   cat >"$CAP_BIN/opencode" <<'STUB'
@@ -308,6 +308,11 @@ case "${1:-}" in
     printf '%s' "$title" >"$state/title"
     cat >"$state/stdin"
     if [[ -n "${FAKE_OPENCODE_SLEEP:-}" ]]; then : >"$state/started"; exec sleep 30; fi
+    if [[ -n "${FAKE_OPENCODE_IGNORE_TERM:-}" ]]; then
+      trap 'touch "$state/got_term"' TERM
+      : >"$state/started"
+      while :; do sleep 1; done
+    fi
     echo "stub review output"
     exit "${FAKE_OPENCODE_EXIT:-0}"
     ;;
@@ -336,7 +341,7 @@ capture_begin() {
 
 capture_end() {
   PATH_WITH_STUBS="$SAVED_PATH_WITH_STUBS"
-  unset FAKE_OPENCODE_STATE FAKE_OPENCODE_EXIT FAKE_OPENCODE_LIST FAKE_OPENCODE_SLEEP
+  unset FAKE_OPENCODE_STATE FAKE_OPENCODE_EXIT FAKE_OPENCODE_LIST FAKE_OPENCODE_SLEEP FAKE_OPENCODE_IGNORE_TERM
 }
 
 skip_without_jq() {
@@ -476,6 +481,38 @@ test_opencode_forwards_termination() {
   assert_stderr_not_contains "consult-session:"
 }
 
+# Signals do not queue: two TERMs fired back-to-back can coalesce into one delivery, so the
+# second is sent only after the stub records receipt of the first (got_term), mirroring the
+# started-marker idiom above.
+test_opencode_escalates_to_kill_on_second_signal() {
+  local pid i
+  capture_begin
+  export FAKE_OPENCODE_IGNORE_TERM=1
+  PATH="$PATH_WITH_STUBS" "$CONSULT" --to opencode "Review API" >"$TMP_DIR/stdout2" 2>"$TMP_DIR/stderr2" &
+  pid=$!
+  for i in $(seq 100); do
+    [[ -e "$CAP_STATE/started" ]] && break
+    sleep 0.1
+  done
+  [[ -e "$CAP_STATE/started" ]] || fail "fake opencode never started"
+  kill -TERM "$pid"
+  for i in $(seq 100); do
+    [[ -e "$CAP_STATE/got_term" ]] && break
+    sleep 0.1
+  done
+  [[ -e "$CAP_STATE/got_term" ]] || fail "backend never received the forwarded TERM"
+  kill -TERM "$pid"
+  set +e
+  wait "$pid"
+  LAST_STATUS=$?
+  set -e
+  LAST_STDOUT="$(<"$TMP_DIR/stdout2")"
+  LAST_STDERR="$(<"$TMP_DIR/stderr2")"
+  capture_end
+  assert_status 137
+  assert_stderr_not_contains "consult-session:"
+}
+
 test_resume_latest_and_id_mapping_qoder() {
   run_case --to qoder --dry-run --resume latest "Review API"
   assert_status 0
@@ -516,6 +553,7 @@ run_test "opencode capture preserves the backend exit status" test_opencode_capt
 run_test "opencode capture fails soft to unknown" test_opencode_capture_fails_soft
 run_test "opencode titles are unique per run" test_opencode_titles_are_unique
 run_test "opencode run forwards termination to the backend" test_opencode_forwards_termination
+run_test "opencode escalates a second signal to SIGKILL" test_opencode_escalates_to_kill_on_second_signal
 run_test "qoder resume latest and id mappings" test_resume_latest_and_id_mapping_qoder
 
 printf '%s wrapper checks passed\n' "$PASS_COUNT"
