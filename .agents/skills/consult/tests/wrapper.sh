@@ -3,7 +3,9 @@ set -euo pipefail
 
 # Deterministic wrapper checks for consult.sh. These tests never call a model:
 # fake backend binaries are placed first on PATH and every case uses --dry-run
-# or a parser path that exits before backend execution.
+# or a parser path that exits before backend execution. The exception is the opencode
+# session-capture cases, which run live against a stateful fake opencode (see
+# install_capture_stub); every other backend keeps the exit-99 stub.
 
 TEST_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SKILL_DIR="$(cd "$TEST_DIR/.." && pwd)"
@@ -283,6 +285,208 @@ test_prompt_framing_reachability_note() {
   assert_stdout_not_contains "Do not edit files"
 }
 
+CAP_BIN="$TMP_DIR/capbin"
+CAP_STATE="$TMP_DIR/capstate"
+BAD_JQ_BIN="$TMP_DIR/badjq"
+
+# Fake opencode that records what `run` received (title, stdin) and answers
+# `session list --format json`. FAKE_OPENCODE_EXIT / _LIST / _SLEEP steer it.
+install_capture_stub() {
+  mkdir -p "$CAP_BIN" "$BAD_JQ_BIN"
+  cat >"$CAP_BIN/opencode" <<'STUB'
+#!/usr/bin/env bash
+state="${FAKE_OPENCODE_STATE:?}"
+case "${1:-}" in
+  run)
+    shift
+    title=""
+    while [[ $# -gt 0 ]]; do
+      [[ "$1" == --title ]] && title="$2"
+      printf '%s\n' "$1" >>"$state/argv"
+      shift
+    done
+    printf '%s' "$title" >"$state/title"
+    cat >"$state/stdin"
+    if [[ -n "${FAKE_OPENCODE_SLEEP:-}" ]]; then : >"$state/started"; exec sleep 30; fi
+    echo "stub review output"
+    exit "${FAKE_OPENCODE_EXIT:-0}"
+    ;;
+  session)
+    case "${FAKE_OPENCODE_LIST:-ok}" in
+      ok) printf '[{"id":"ses_decoy","title":"other","directory":"/x"},{"id":"ses_stub123","title":"%s","directory":"/x"}]\n' "$(cat "$state/title")" ;;
+      empty) echo '[]' ;;
+      garbage) echo 'not json' ;;
+      fail) exit 1 ;;
+    esac
+    ;;
+esac
+STUB
+  chmod +x "$CAP_BIN/opencode"
+  printf '#!/usr/bin/env bash\nexit 1\n' >"$BAD_JQ_BIN/jq"
+  chmod +x "$BAD_JQ_BIN/jq"
+}
+
+capture_begin() {
+  rm -rf "$CAP_STATE"
+  mkdir -p "$CAP_STATE"
+  export FAKE_OPENCODE_STATE="$CAP_STATE"
+  SAVED_PATH_WITH_STUBS="$PATH_WITH_STUBS"
+  PATH_WITH_STUBS="$CAP_BIN:$PATH_WITH_STUBS"
+}
+
+capture_end() {
+  PATH_WITH_STUBS="$SAVED_PATH_WITH_STUBS"
+  unset FAKE_OPENCODE_STATE FAKE_OPENCODE_EXIT FAKE_OPENCODE_LIST FAKE_OPENCODE_SLEEP
+}
+
+skip_without_jq() {
+  command -v jq >/dev/null 2>&1 && return 1
+  printf 'skip - %s needs jq\n' "$CURRENT_TEST" >&2
+  return 0
+}
+
+test_opencode_resume_latest_warns() {
+  run_case --to opencode --dry-run --resume latest "Review API"
+  assert_status 0
+  assert_stdout_contains "--continue"
+  assert_stdout_not_contains "--title"
+  assert_stderr_contains "--resume latest continues OpenCode's newest session"
+}
+
+test_resume_latest_warns_on_every_backend() {
+  local backend
+  for backend in claude codex gemini opencode pi qoder; do
+    run_case --to "$backend" --dry-run --resume latest "Review API"
+    assert_status 0
+    assert_stderr_contains "--resume latest continues"
+    run_case --to "$backend" --dry-run --resume abc "Review API"
+    assert_status 0
+    assert_stderr_not_contains "--resume latest"
+    assert_stderr_not_contains "consult-session:"
+  done
+}
+
+test_known_session_ids_are_reported() {
+  local backend
+  capture_begin
+  for backend in claude gemini pi qoder; do
+    printf '#!/usr/bin/env bash\nexit 0\n' >"$CAP_BIN/$backend"
+    chmod +x "$CAP_BIN/$backend"
+    run_case --to "$backend" --resume ses_known "Review API"
+    assert_status 0
+    assert_stderr_contains "consult-session: ses_known"
+    [[ -n "$LAST_STDOUT" ]] && fail "$backend: stdout must stay the backend output"
+    run_case --to "$backend" --session-id uuid-chosen "Review API"
+    assert_status 0
+    assert_stderr_contains "consult-session: uuid-chosen"
+    rm -f "$CAP_BIN/$backend"
+  done
+  capture_end
+}
+
+test_opencode_fresh_dry_run_title_placeholder() {
+  run_case --to opencode --dry-run "Review API"
+  assert_status 0
+  assert_stdout_contains "--title"
+  assert_stderr_not_contains "consult-session:"
+}
+
+test_opencode_resume_id_reports_known_id() {
+  capture_begin
+  run_case --to opencode --resume ses_x "Review API"
+  capture_end
+  assert_status 0
+  assert_stderr_contains "consult-session: ses_x"
+  [[ "$(<"$CAP_STATE/argv")" == *"--session"* ]] || fail "expected --session in backend argv"
+  [[ ! -s "$CAP_STATE/title" ]] || fail "a resumed run must not carry --title"
+}
+
+test_opencode_fresh_reports_session_id() {
+  skip_without_jq && return 0
+  capture_begin
+  run_case --to opencode "Review API"
+  capture_end
+  assert_status 0
+  [[ "$LAST_STDOUT" == "stub review output" ]] || fail "stdout was not the backend output verbatim"
+  assert_stderr_contains "consult-session: ses_stub123"
+  [[ "$(<"$CAP_STATE/title")" == consult-* ]] || fail "expected a consult-* title"
+  [[ ! -s "$CAP_STATE/stdin" ]] || fail "backend stdin was not closed"
+}
+
+test_opencode_capture_preserves_exit_status() {
+  skip_without_jq && return 0
+  capture_begin
+  export FAKE_OPENCODE_EXIT=7
+  run_case --to opencode "Review API"
+  capture_end
+  assert_status 7
+  assert_stderr_contains "consult-session: ses_stub123"
+}
+
+test_opencode_capture_fails_soft() {
+  local mode
+  for mode in empty garbage fail; do
+    capture_begin
+    export FAKE_OPENCODE_LIST="$mode"
+    run_case --to opencode "Review API"
+    capture_end
+    assert_status 0
+    assert_stderr_contains "consult-session: unknown"
+  done
+
+  capture_begin
+  PATH_WITH_STUBS="$BAD_JQ_BIN:$PATH_WITH_STUBS"
+  run_case --to opencode "Review API"
+  capture_end
+  assert_status 0
+  assert_stderr_contains "consult-session: unknown"
+}
+
+test_opencode_titles_are_unique() {
+  local first second
+  capture_begin
+  run_case --to opencode "Review API"
+  first="$(<"$CAP_STATE/title")"
+  run_case --to opencode "Review API"
+  second="$(<"$CAP_STATE/title")"
+  capture_end
+  [[ -n "$first" && "$first" != "$second" ]] || fail "titles were not unique: '$first' vs '$second'"
+}
+
+test_opencode_forwards_termination() {
+  local pid i
+  capture_begin
+  export FAKE_OPENCODE_SLEEP=1
+  PATH="$PATH_WITH_STUBS" "$CONSULT" --to opencode "Review API" >"$TMP_DIR/stdout" 2>"$TMP_DIR/stderr" &
+  pid=$!
+  for i in $(seq 100); do
+    [[ -e "$CAP_STATE/started" ]] && break
+    sleep 0.1
+  done
+  [[ -e "$CAP_STATE/started" ]] || fail "fake opencode never started"
+  kill -TERM "$pid"
+  set +e
+  wait "$pid"
+  LAST_STATUS=$?
+  set -e
+  LAST_STDOUT="$(<"$TMP_DIR/stdout")"
+  LAST_STDERR="$(<"$TMP_DIR/stderr")"
+  capture_end
+  assert_status 143
+  assert_stderr_not_contains "consult-session:"
+}
+
+test_resume_latest_and_id_mapping_qoder() {
+  run_case --to qoder --dry-run --resume latest "Review API"
+  assert_status 0
+  assert_stdout_contains " -c "
+  run_case --to qoder --dry-run --resume abc "Review API"
+  assert_status 0
+  assert_stdout_contains "--resume abc"
+}
+
+install_capture_stub
+
 run_test "codex dry-run uses read-only sandbox defaults" test_codex_defaults
 run_test "gemini dry-run uses plan approval defaults" test_gemini_defaults
 run_test "claude dry-run uses plan permission defaults" test_claude_defaults
@@ -302,5 +506,16 @@ run_test "raw prompts cannot begin with a flag where the prompt is positional" t
 run_test "pi rejects consult json mode" test_pi_json_rejected
 run_test "positional prompts work with dash caveat" test_positional_prompt_and_dash_caveat
 run_test "dispatcher does not capture forwarded option values" test_dispatcher_does_not_capture_forwarded_values
+run_test "opencode resume latest warns and keeps --continue" test_opencode_resume_latest_warns
+run_test "every backend warns on --resume latest" test_resume_latest_warns_on_every_backend
+run_test "caller-known session ids are reported on stderr" test_known_session_ids_are_reported
+run_test "opencode fresh dry-run shows a placeholder title" test_opencode_fresh_dry_run_title_placeholder
+run_test "opencode resume by id reports the known id" test_opencode_resume_id_reports_known_id
+run_test "opencode fresh run reports its session id on stderr only" test_opencode_fresh_reports_session_id
+run_test "opencode capture preserves the backend exit status" test_opencode_capture_preserves_exit_status
+run_test "opencode capture fails soft to unknown" test_opencode_capture_fails_soft
+run_test "opencode titles are unique per run" test_opencode_titles_are_unique
+run_test "opencode run forwards termination to the backend" test_opencode_forwards_termination
+run_test "qoder resume latest and id mappings" test_resume_latest_and_id_mapping_qoder
 
 printf '%s wrapper checks passed\n' "$PASS_COUNT"

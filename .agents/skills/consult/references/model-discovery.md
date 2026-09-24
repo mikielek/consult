@@ -110,7 +110,7 @@ billing/tier/project reasons; (2) the same model has different ids per backend (
 vs `opencode/claude-sonnet-4-6` vs `google-vertex-anthropic/claude-sonnet-4-6@default`); (3) only
 opencode/pi/codex expose any native listing — claude/gemini rely on known ids plus a probe.
 
-> This table predates the `qoder` backend (added 2026-09), so it has no qoder row and takeaway (3) is
+> This worked-example table predates the `qoder` backend (added 2026-09), so it has no qoder row and takeaway (3) is
 > stale as written: `qoder --list-models` is account-scoped native listing, joining opencode/pi/codex.
 > Qoder was not probed for model-count or per-model failures here, so re-run the sweep rather than
 > extending these counts by analogy.
@@ -126,7 +126,7 @@ would flatten each backend's native richness.
 Build it only when a concrete machine-readable consumer (router, UI, cache) needs deterministic
 normalized output. It would require: a top-level `--discover` mode in `consult.sh`; a per-adapter
 mode guard (today all adapters run `parse_common_args → require_prompt → run_or_print` at source
-time, so they would need a `main()`/discovery branch before `require_prompt`); a generic fallback and
+time — `run_or_print`, or `run_capture_status` for opencode fresh runs — so they would need a `main()`/discovery branch before `require_prompt`); a generic fallback and
 output renderer in `common.sh`; and discovery cases in `tests/wrapper.sh`. There is intentionally
 **no** `discover_models()` adapter hook today — do not assume one exists. Also deferred until then:
 response caching/TTL, canonical model-id mapping across backends, cross-backend capability filters,

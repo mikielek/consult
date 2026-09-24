@@ -23,7 +23,8 @@ Also checked official OpenCode docs dated 2026-06-11.
   bypass flag was named `--dangerously-skip-permissions`).
 - `opencode session list` lists sessions, and `opencode export [sessionID]` exports session data.
 
-Adapter mapping: `--resume latest` → `--continue`; `--resume <id>` → `--session <id>`;
+Adapter mapping: `--resume latest` → `--continue` (with a stderr warning); `--resume <id>` → `--session <id>`;
+a fresh run gets `--title consult-<epoch>-<pid>-<random>` (see Session ids);
 `--json` → `--format json`; the prompt is passed positionally last. Consult does not expose
 OpenCode file attachment flags; mention in-tree file paths directly in the prompt instead.
 
@@ -76,14 +77,36 @@ out-of-tree path fails as a *permission* rejection, not as "file not found".
 Either way, `SKILL.md` requires callers to name only in-tree paths, so nothing in the skill's
 behavior depends on this result. Recipe: `backend-adapters.md` → "Re-measuring read scope".
 
+## Session ids
+
+opencode assigns its own ids and cannot create a session with a caller-chosen one (checked
+2026-09-24, `1.18.32`: `run --session <unused id>` fails with `Session not found`). `--continue`
+resumes the newest session of the project, so `--resume latest` silently crosses concurrent
+callers. The adapter therefore reports the id of a fresh run:
+
+- It passes `--title consult-<epoch>-<pid>-<random>`; after the run it reads
+  `opencode session list --pure --format json` (rows carry `id`, `title`, `directory`, `projectId`,
+  `created`, `updated`) and prints `consult-session: <id>` on stderr for the row with that exact title.
+  A custom title is kept: opencode only auto-renames sessions still titled `New session - <date>`.
+  Cost: consult sessions show up as `consult-…` in the TUI.
+- It matches on title alone, not `directory`, which is redundant and breaks under symlinks,
+  subdirectories and worktrees. Without `jq`, or if the lookup fails or matches nothing, the line
+  reads `consult-session: unknown` and the exit status is untouched.
+- Rejected alternatives: `--format json` (its event stream carries the id but turns stdout into JSONL)
+  and a per-caller `XDG_DATA_HOME` (splits auth and config).
+- `--resume <id>` prints `consult-session: <id>` before running; `--resume latest` prints a warning and
+  no id line, since the continued session's id is not resolvable without a title.
+- Only fresh runs leave `exec` (`run_capture_status` in `common.sh`); resumed runs still `exec`.
+
 ## Reviewing Consult Sessions
 
 Consult runs are not observable while they run: on `1.18.25`, plain `opencode run` opened no TCP
 listener (`--port` bound nothing), and its session emitted no events on a separate server's stream.
 
 They are fully reviewable afterwards, with no consult change. Sessions are stored in
-`~/.local/share/opencode/opencode.db` (SQLite, not per-session files) and scoped by project
-directory, so from the repo:
+`~/.local/share/opencode/opencode.db` (SQLite, not per-session files) and scoped by **project**
+(`projectId`; one project can span several directories, and `session list` shows all of them), so
+from the repo:
 
 ```bash
 opencode session list            # ids + titles for this directory's project

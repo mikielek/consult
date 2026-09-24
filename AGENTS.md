@@ -117,6 +117,15 @@ Retrospective notes from the trigger/safety tightening work:
   permissions, sandboxes, current files, staged state, untracked files, and CLI behavior. The prompt
   secret preflight is intentionally narrow and never scans referenced files, so artifact files must
   be sanitized by the host.
+- Session concurrency is a contract every adapter follows (`warn_resume_latest`,
+  `report_known_session`, and a concurrency-safe way to obtain an id), documented in
+  `references/backend-adapters.md`; check it when adding a backend.
+- OpenCode session ids are reported by title lookup, on stderr only. `--resume latest` continues the
+  newest session of the *project*, which crosses concurrent callers, and the id cannot be minted up
+  front (opencode rejects `--session <unused id>`). `--format json` would carry the id but change
+  stdout, and per-caller data dirs would split auth, so a fresh run gets a unique `--title` and
+  `run_capture_status` (the only non-`exec` path) resolves it afterwards via `session list`. Match on
+  title alone, never `directory`; fail soft to `consult-session: unknown`; keep resumed runs on `exec`.
 - Pi consult `--json` is intentionally unsupported because Pi JSON mode emits verbose JSONL
   tool/thinking events while plain `pi -p` prints the final response. Do not re-add `--mode json`
   unless a caller is prepared to consume that event stream.

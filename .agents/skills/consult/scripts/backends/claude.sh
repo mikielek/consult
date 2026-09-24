@@ -31,4 +31,6 @@ fi
 [[ -n "$SESSION_ID" ]] && cmd+=(--session-id "$SESSION_ID")
 cmd+=("$prompt")
 
+warn_resume_latest "Claude"
+report_known_session
 run_or_print "${cmd[@]}"

@@ -120,3 +120,52 @@ run_or_print() {
   command -v "$1" >/dev/null 2>&1 || die "'$1' is not on PATH; install the $1 CLI (and authenticate it) to use this backend"
   exec "$@" </dev/null
 }
+
+# Session-concurrency contract, shared by every adapter (see references/backend-adapters.md):
+# call both right before run_or_print / run_capture_status.
+#
+# warn_resume_latest CALLEE -> `--resume latest` continues the newest session of the project,
+# which silently crosses concurrent callers, so warn (also under --dry-run); never refuse.
+warn_resume_latest() {
+  if [[ "$RESUME" == "latest" ]]; then
+    echo "consult: warning: --resume latest continues $1's newest session of this project; it breaks silently when other agents use $1 here. Resume by id instead (see the consult-session: line, or pass --session-id where supported)." >&2
+  fi
+  return 0
+}
+
+# report_known_session -> on a live run, print `consult-session: <id>` on stderr when the caller
+# already chose the id (--session-id) or names it (--resume <id>). stdout is never touched.
+report_known_session() {
+  local id=""
+  if [[ "$DRY_RUN" -eq 0 ]]; then
+    if [[ -n "$SESSION_ID" ]]; then
+      id="$SESSION_ID"
+    elif [[ -n "$RESUME" && "$RESUME" != "latest" ]]; then
+      id="$RESUME"
+    fi
+    if [[ -n "$id" ]]; then echo "consult-session: $id" >&2; fi
+  fi
+  return 0
+}
+
+# run_capture_status CMD... -> run CMD live without exec so the adapter can act afterwards.
+# Opt-in for backends that cannot report their own session id; call as
+# `run_capture_status ... || rc=$?` (errexit-safe). Returns the child's exact status, or
+# 128+n after a forwarded INT/TERM/HUP, and sets CAPTURE_INTERRUPTED=1 in that case. The child
+# runs in the background because bash defers a trapped signal until a foreground child exits,
+# which would keep the trap from forwarding anything.
+run_capture_status() {
+  [[ $# -gt 0 ]] || die "internal error: empty command"
+  command -v "$1" >/dev/null 2>&1 || die "'$1' is not on PATH; install the $1 CLI (and authenticate it) to use this backend"
+  CAPTURE_INTERRUPTED=0
+  local child rc=0
+  "$@" </dev/null &
+  child=$!
+  trap 'CAPTURE_INTERRUPTED=1; kill -TERM "$child" 2>/dev/null' INT TERM HUP
+  while :; do
+    wait "$child" && rc=0 || rc=$?
+    kill -0 "$child" 2>/dev/null || break
+  done
+  trap - INT TERM HUP
+  return "$rc"
+}

@@ -36,4 +36,6 @@ cmd+=(--skip-git-repo-check)
 [[ -n "$MODEL" ]]         && cmd+=(-m "$MODEL")
 cmd+=("$prompt")
 
+warn_resume_latest "Codex"
+report_known_session
 run_or_print "${cmd[@]}"

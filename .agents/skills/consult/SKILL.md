@@ -173,10 +173,21 @@ scope under review.
 - Default to a one-shot prompt for a single review, quick check, or standalone answer.
 - Use one persistent session only when the user asks for continuity, debate, multiple rounds,
   iterative design, or follow-up memory on the same topic.
-- Continue a session with `--resume latest` (only when no unrelated session intervened) or
-  `--resume <session-id>`. Gemini, Claude and Qoder also accept `--session-id <uuid>`; Pi accepts
-  `--session-id <id>` for an exact project session id. OpenCode and Codex assign their own ids
-  (capture them from output to resume).
+- Continue a session with `--resume <session-id>`. Use `--resume latest` only when you are certain no
+  other agent or person is using that backend in this project: parallel subagents, a second terminal
+  or a teammate all break it silently, and you cannot observe that from inside one agent. `latest`
+  resolves to the newest session for OpenCode (`--continue`), Pi (`--continue`), Claude
+  (`--continue`), Qoder (`-c`) and Codex (`resume --last`); Gemini passes it through as
+  `--resume latest`.
+- Every backend warns on stderr when given `--resume latest`, and prints `consult-session: <id>` on
+  stderr when the id is already known.
+- Prefer a caller-chosen id where the backend takes one: Gemini, Claude and Qoder accept
+  `--session-id <uuid>`, and Pi accepts `--session-id <id>` (its only way to get a resumable session,
+  since fresh Pi runs use `--no-session`).
+- OpenCode and Codex assign their own ids. OpenCode reports its id as a `consult-session: <id>` line
+  on **stderr** after a fresh run (stdout stays the review text); capture it from round 1 and pass it
+  to `--resume`. It reads `consult-session: unknown` if the lookup failed. Codex prints
+  `session id: <uuid>` in its stderr banner.
 - Note a persistent session id in your working notes when later rounds will need it. If the task
   changes materially, start a new session or ask whether to continue.
 

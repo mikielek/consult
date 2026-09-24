@@ -56,7 +56,33 @@ An adapter:
    `opencode --` was observed re-quoting the token into the Bun argv instead of honoring it.
 5. Hands the command to `run_or_print "${cmd[@]}"`, which prints it under `--dry-run` or `exec`s it
    with stdin closed (`</dev/null`) to stay non-interactive. `cmd[0]` must be the backend's base
-   binary (not a wrapper like `npx`) so the `command -v` install check is accurate.
+   binary (not a wrapper like `npx`) so the `command -v` install check is accurate. A backend that
+   cannot report its own session id may instead use the opt-in `run_capture_status` for **fresh**
+   runs (`opencode.sh`: unique `--title`, then a post-run id lookup on stderr). It runs the child in
+   the background so INT/TERM/HUP are forwarded and returns its exact status, so call it as
+   `run_capture_status ... || rc=$?`. `opencode.sh` is therefore not the minimal template; under
+   `--dry-run` it prints a placeholder title.
+
+### Session-concurrency contract (required for every backend)
+
+Sessions are shared per project, and callers cannot see whether another agent is using the same
+backend, so an adapter that supports `--resume` must not let concurrent callers collide silently.
+Right before `run_or_print` (or `run_capture_status`) it must:
+
+1. Call `warn_resume_latest "<Callee>"`: `--resume latest` warns on stderr (also under `--dry-run`)
+   and still works. Never refuse it.
+2. Call `report_known_session`: a live run with a caller-known id (`--session-id X` or
+   `--resume X`) prints `consult-session: X` on stderr.
+3. Give callers a **concurrency-safe way to obtain an id**, in this order of preference:
+   - the backend accepts a caller-chosen id: map `--session-id` (Gemini, Claude, Qoder, Pi);
+   - the backend prints its own id natively (Codex: `session id:` in the stderr banner);
+   - otherwise resolve it after a fresh run and print `consult-session: <id>` (or `unknown`) on
+     stderr, as `opencode.sh` does with a unique `--title` and `run_capture_status`.
+
+Stdout stays the backend's output in all cases, and the id line is stderr-only. Cover the new backend in
+`tests/wrapper.sh` (`test_resume_latest_warns_on_every_backend` loops over the backend list;
+`test_known_session_ids_are_reported` needs the backend added to its stub loop) and record how the id
+is obtained in `references/<name>-cli.md`.
 
 The existing adapters are the canonical templates: `claude.sh`, `codex.sh`, `gemini.sh`,
 `opencode.sh`, `pi.sh`, `qoder.sh`. Record observed CLI behavior, tested flags, and caveats for the

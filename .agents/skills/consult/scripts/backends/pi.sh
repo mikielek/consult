@@ -45,4 +45,6 @@ fi
 
 cmd+=("$prompt")
 
+warn_resume_latest "Pi"
+report_known_session
 run_or_print "${cmd[@]}"

@@ -203,6 +203,16 @@
   ],
   "output_evals": [
     {
+      "id": "output_multi_round_session_capture",
+      "input": "Have OpenCode review plan A, then run a second round asking it to re-check its own findings.",
+      "checks": [
+        "Runs round 1 without --resume and captures the consult-session: id printed on stderr.",
+        "Continues round 2 with --resume <captured id>, not --resume latest.",
+        "Uses --resume latest only when no other agent or person could be using that backend in this project, and says so.",
+        "Treats consult-session: unknown as a reason to look up the id with opencode session list rather than guessing."
+      ]
+    },
+    {
       "id": "output_prompt_framing",
       "input": "Ask Gemini to review the retry logic in src/client.ts for edge cases.",
       "checks": [

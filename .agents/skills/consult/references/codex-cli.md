@@ -63,7 +63,8 @@ behavior depends on this result. Recipe: `backend-adapters.md` → "Re-measuring
 - `--resume latest` → `exec resume --last` (most recent recorded session).
 - `--resume <id>` → `exec resume <id>` (UUID or thread name).
 - Setting a custom session id is unsupported (Codex assigns its own), so the adapter rejects
-  `--session-id`; capture the id from `--json` output if you need to resume a specific one.
+  `--session-id`. Human mode prints `session id: <uuid>` in the stderr banner (verified 2026-09-24,
+  Codex `0.147.0`); `--json` also carries it.
 
 ## Caveats
 

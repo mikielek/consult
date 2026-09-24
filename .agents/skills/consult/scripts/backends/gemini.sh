@@ -22,4 +22,6 @@ cmd=(gemini -p "$prompt" --approval-mode plan)
 [[ -n "$SESSION_ID" ]]   && cmd+=(--session-id "$SESSION_ID")
 [[ -n "$MODEL" ]]        && cmd+=(--model "$MODEL")
 
+warn_resume_latest "Gemini"
+report_known_session
 run_or_print "${cmd[@]}"
