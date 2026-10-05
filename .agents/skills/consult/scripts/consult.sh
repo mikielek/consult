@@ -31,15 +31,16 @@ Normalized options (a backend may not support all of them):
   -m, --model MODEL   Use a specific model.
       --raw           Send --prompt verbatim, skipping the reviewer framing. A raw
                       prompt cannot begin with '-' (or '@' on Pi) where the backend
-                      takes the prompt positionally, since the CLI would parse it.
+                      takes the prompt positionally, since the CLI would parse it,
+                      nor with '/' on agy, which runs it as a slash command.
       --allow-secrets Bypass the prompt secret preflight after explicit review.
       --dry-run       Print the resolved backend command without running it.
   -h, --help          Show this help.
 
 Notes:
   --json output is backend-specific: Codex emits JSONL events, Gemini/Claude/Qoder/
-  OpenCode use their CLI formats (Qoder returns one JSON result object on stdout,
-  with notices on stderr), and Pi rejects consult --json.
+  OpenCode/agy use their CLI formats (Qoder and agy return one JSON result object on
+  stdout, with notices on stderr), and Pi rejects consult --json.
   Backend output is printed directly and may be truncated by the host UI.
   Exit 2 indicates wrapper validation or setup failure; live backend exits pass
   through otherwise.

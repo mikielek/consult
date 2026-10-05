@@ -134,9 +134,11 @@ Retrospective notes from the trigger/safety tightening work:
   positional-prompt backend: `--raw --prompt "--some-cli-flag"` reached the backend argv as an
   option and could shape permissions, exactly what the absent `--` passthrough prevents. That is now
   `common.sh`'s `guard_positional_prompt`, called by Claude, Codex, OpenCode, Pi and Qoder; Gemini is
-  exempt because it binds the prompt to a `-p` value. Test the `-` and `@` forms — a positional
-  `-...` prompt fails earlier in common parsing, and a non-raw `-...` prompt must keep working,
-  because composed prompts always start with the framing. Do not "fix" this by emitting a real `--`
+  exempt because it binds the prompt to a `-p` value. agy also binds `-p` (measured: `-p "--mode
+  accept-edits"` stayed prompt text) but runs a leading `/` as a slash command, so it guards `/`
+  only. Test the `-` and `@` forms — a positional `-...` prompt fails earlier in common parsing, and
+  a non-raw `-...` prompt must keep working, because composed prompts always start with the
+  framing. Do not "fix" this by emitting a real `--`
   delimiter: measured 2026-09-24, `claude -- <token>` read the token as prompt text and answered it
   live, `codex -- <token>` got past option parsing and failed only on `stdin is not a terminal`, and
   `opencode --` re-quoted the token into the Bun argv rather than honoring it. Per-CLI delimiters are
@@ -196,6 +198,26 @@ Retrospective notes from the trigger/safety tightening work:
   re-measure with the recipe in `references/backend-adapters.md` ("Re-measuring read scope") rather
   than trusting them. The caller rule in `SKILL.md` is conservative on purpose so that no skill
   behavior depends on the result.
+
+- agy (Antigravity CLI) caveats, measured 2026-10-05 on `1.2.17`; details in `references/agy-cli.md`:
+  - **`--mode` fails open.** An unknown value only warns and runs in the default mode, so the
+    adapter refuses a live run unless `agy --help` still lists `plan` under `--mode`.
+    `--disable-slash-commands` silently cancels `--mode plan` (agy warns that plan "has no effect"),
+    so never add it; guard `/` instead.
+  - **Headless denial ends the turn.** Headless print mode auto-denies writes and shell commands,
+    then exits 0 with an empty answer. Unsteered reviews failed 0/9 because the model reached for
+    `grep`/`head` first. The adapter-only "Headless note" appended to framed prompts fixed it, 6/6,
+    at 4-6 min per review. Keep the note in `agy.sh`, not `compose_prompt`: other backends run
+    read-only shell commands fine. `--sandbox` did not help.
+  - **Session id.** agy cannot take a caller-chosen id and prints none in text mode. Its log carries
+    `Print mode: conversation=<uuid>` and no prompt text, so fresh runs use a per-run `--log-file`
+    plus `run_capture_status`. JSON mode carries `conversation_id` but would change stdout.
+  - **Routing.** "Ask Gemini" prefers `--to agy` as a stated SKILL.md preference, not a wrapper
+    alias. `--to gemini` still means Gemini CLI, and the "model names are not backends" rule keeps
+    this as its single documented exception. Fallback to `gemini` is host guidance for setup or
+    availability failures only, never mid-session or for answer quality. `SKILL.md` keeps only
+    the rule; the exit codes and stderr strings for each failure case live in `agy-cli.md`
+    ("Fallback to gemini"), because `SKILL.md` is paid for on every trigger.
 
 - Personal/global installs are committed snapshots (`git archive "HEAD:.agents/skills/consult"`),
   not symlinks at a working tree. A symlinked personal install makes every repo's consultations run

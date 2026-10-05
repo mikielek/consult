@@ -69,6 +69,7 @@ removing a backend is a one-row edit here; see `backend-adapters.md`.)
 | codex | `codex doctor` (auth mode) | `codex debug models [--bundled]` | Yes (JSON) | Native raw catalog, not entitlement-checked |
 | claude | `claude whoami` | none native | No | Authenticated account, no model listing |
 | gemini | none explicit (`--list-sessions` = local liveness) | none native | No | Binary/session liveness, not provider auth |
+| agy | `agy models` (fetches the account catalog, so success implies auth) | same command (`gemini-3.x-…` ids with the effort level in the id) | No | Authenticated account-scoped candidate listing |
 | qoder | `qoder whoami` (prints the signed-in account) | `qoder --list-models` (account-scoped names) | No | Authenticated account-scoped candidate listing |
 
 Discovery levels (stable labels for reporting):
@@ -79,7 +80,7 @@ Discovery levels (stable labels for reporting):
 | `auth-signal` | CLI reports credentials/account state (`claude whoami`, `codex doctor`) |
 | `local-liveness` | CLI reads local state but provider auth unproven (`gemini --list-sessions`) |
 | `native-catalog` | CLI lists candidates, not entitlement (`codex debug models`) |
-| `authenticated-listing` | CLI lists candidates scoped to configured providers or the signed-in account (`opencode models`, `pi --list-models`, `qoder --list-models`) |
+| `authenticated-listing` | CLI lists candidates scoped to configured providers or the signed-in account (`opencode models`, `pi --list-models`, `agy models`, `qoder --list-models`) |
 | `verified-reachable` | A minimal probe succeeded |
 
 ## Reporting findings

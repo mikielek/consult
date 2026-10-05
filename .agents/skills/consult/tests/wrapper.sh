@@ -17,7 +17,7 @@ trap cleanup EXIT
 
 FAKE_BIN="$TMP_DIR/bin"
 mkdir -p "$FAKE_BIN"
-for bin in codex gemini claude opencode pi qoder; do
+for bin in codex gemini claude opencode pi qoder agy; do
   cat >"$FAKE_BIN/$bin" <<'STUB'
 #!/usr/bin/env bash
 printf 'unexpected live backend invocation: %s\n' "$0" >&2
@@ -130,6 +130,52 @@ test_gemini_defaults() {
   assert_stdout_contains "gemini -p"
   assert_stdout_contains "--approval-mode plan"
   assert_stdout_contains "Do not edit files"
+}
+
+test_agy_defaults() {
+  run_case --to agy --dry-run "Review API"
+  assert_status 0
+  assert_stdout_contains "agy --mode plan"
+  assert_stdout_contains "Do not edit files"
+  assert_stdout_contains "Use only your built-in file viewing"
+  assert_stdout_contains "--log-file"
+  assert_before "--mode plan" " -p "
+  # agy silently drops --mode plan when slash commands are disabled.
+  assert_stdout_not_contains "--disable-slash-commands"
+}
+
+test_agy_option_mapping() {
+  run_case --to agy --dry-run --json --model gemini-3.1-pro-high "Review API"
+  assert_status 0
+  assert_stdout_contains "--output-format json"
+  assert_stdout_contains "--model gemini-3.1-pro-high"
+
+  run_case --to agy --dry-run --resume latest "Review API"
+  assert_status 0
+  assert_stdout_contains " -c "
+  assert_stdout_not_contains "--log-file"
+
+  run_case --to agy --dry-run --resume abc "Review API"
+  assert_status 0
+  assert_stdout_contains "--conversation abc"
+  assert_stdout_not_contains "--log-file"
+
+  run_case --to agy --dry-run --session-id 11111111-2222-4333-8444-555555555555 "Review API"
+  assert_status 2
+  assert_stderr_contains "agy backend does not support --session-id"
+}
+
+test_agy_raw_prompt_guard() {
+  # -p binds the prompt as an option value, so a leading '-' stays prompt text...
+  run_case --to agy --dry-run --raw --prompt "--model x"
+  assert_status 0
+  assert_stdout_not_contains "Use only your built-in file viewing"
+  # ...but a leading '/' runs a slash command in print mode.
+  run_case --to agy --dry-run --raw --prompt "/usage"
+  assert_status 2
+  assert_stderr_contains "a --raw prompt cannot begin with '/' for Antigravity"
+  run_case --to agy --dry-run --prompt "/usage"
+  assert_status 0
 }
 
 test_claude_defaults() {
@@ -289,6 +335,42 @@ CAP_BIN="$TMP_DIR/capbin"
 CAP_STATE="$TMP_DIR/capstate"
 BAD_JQ_BIN="$TMP_DIR/badjq"
 
+# Fake agy that records its argv and stdin and, when given --log-file, writes a log with the
+# conversation line agy 1.2.17 emits. FAKE_AGY_LOG=none / FAKE_AGY_EXIT / FAKE_AGY_NO_PLAN
+# (a --help that no longer lists plan mode) steer it.
+install_agy_capture_stub() {
+  mkdir -p "$CAP_BIN"
+  cat >"$CAP_BIN/agy" <<'STUB'
+#!/usr/bin/env bash
+state="${FAKE_OPENCODE_STATE:?}"
+if [[ "${1:-}" == --help ]]; then
+  if [[ -n "${FAKE_AGY_NO_PLAN:-}" ]]; then
+    echo '  --mode                          Set the agent execution mode for this session (accept-edits)'
+  else
+    echo '  --mode                          Set the agent execution mode for this session (accept-edits, plan)'
+  fi
+  exit 0
+fi
+log=""
+while [[ $# -gt 0 ]]; do
+  printf '%s\n' "$1" >>"$state/agy_argv"
+  [[ "$1" == --log-file ]] && log="${2:-}"
+  shift
+done
+cat >"$state/stdin"
+if [[ -n "$log" ]]; then
+  printf '%s' "$log" >"$state/agy_log_path"
+  if [[ "${FAKE_AGY_LOG:-ok}" == ok ]]; then
+    printf 'I1005 printmode.go:202] Print mode: starting (promptLength=1, model="", conversationID="")\n' >"$log"
+    printf 'I1005 session.go:192] Print mode: conversation=8044eb17-2323-46bb-aa37-3955bdc76666, sending message\n' >>"$log"
+  fi
+fi
+echo "stub agy output"
+exit "${FAKE_AGY_EXIT:-0}"
+STUB
+  chmod +x "$CAP_BIN/agy"
+}
+
 # Fake opencode that records what `run` received (title, stdin) and answers
 # `session list --format json`. FAKE_OPENCODE_EXIT / _LIST / _SLEEP / _IGNORE_TERM steer it.
 install_capture_stub() {
@@ -342,6 +424,7 @@ capture_begin() {
 capture_end() {
   PATH_WITH_STUBS="$SAVED_PATH_WITH_STUBS"
   unset FAKE_OPENCODE_STATE FAKE_OPENCODE_EXIT FAKE_OPENCODE_LIST FAKE_OPENCODE_SLEEP FAKE_OPENCODE_IGNORE_TERM
+  unset FAKE_AGY_LOG FAKE_AGY_EXIT FAKE_AGY_NO_PLAN
 }
 
 skip_without_jq() {
@@ -360,7 +443,7 @@ test_opencode_resume_latest_warns() {
 
 test_resume_latest_warns_on_every_backend() {
   local backend
-  for backend in claude codex gemini opencode pi qoder; do
+  for backend in claude codex gemini opencode pi qoder agy; do
     run_case --to "$backend" --dry-run --resume latest "Review API"
     assert_status 0
     assert_stderr_contains "--resume latest continues"
@@ -523,6 +606,56 @@ test_resume_latest_and_id_mapping_qoder() {
 }
 
 install_capture_stub
+install_agy_capture_stub
+
+test_agy_fresh_reports_session_id() {
+  local log
+  capture_begin
+  run_case --to agy "Review API"
+  capture_end
+  assert_status 0
+  [[ "$LAST_STDOUT" == "stub agy output" ]] || fail "stdout was not the backend output verbatim"
+  assert_stderr_contains "consult-session: 8044eb17-2323-46bb-aa37-3955bdc76666"
+  [[ ! -s "$CAP_STATE/stdin" ]] || fail "backend stdin was not closed"
+  log="$(<"$CAP_STATE/agy_log_path")"
+  [[ -n "$log" && ! -e "$log" ]] || fail "per-run log was not removed: '$log'"
+}
+
+test_agy_capture_preserves_exit_and_fails_soft() {
+  capture_begin
+  export FAKE_AGY_EXIT=3
+  run_case --to agy "Review API"
+  capture_end
+  assert_status 3
+  assert_stderr_contains "consult-session: 8044eb17-2323-46bb-aa37-3955bdc76666"
+
+  capture_begin
+  export FAKE_AGY_LOG=none
+  run_case --to agy "Review API"
+  capture_end
+  assert_status 0
+  assert_stderr_contains "consult-session: unknown"
+}
+
+test_agy_refuses_without_plan_mode() {
+  capture_begin
+  export FAKE_AGY_NO_PLAN=1
+  run_case --to agy "Review API"
+  capture_end
+  assert_status 2
+  assert_stderr_contains "no longer lists 'plan' under --mode"
+  [[ ! -e "$CAP_STATE/agy_argv" ]] || fail "agy must not run without plan mode"
+}
+
+test_agy_resume_reports_known_id() {
+  capture_begin
+  run_case --to agy --resume conv_known "Review API"
+  capture_end
+  assert_status 0
+  assert_stderr_contains "consult-session: conv_known"
+  [[ "$(<"$CAP_STATE/agy_argv")" == *"--conversation"* ]] || fail "expected --conversation in backend argv"
+  [[ "$(<"$CAP_STATE/agy_argv")" != *"--log-file"* ]] || fail "a resumed run must not carry --log-file"
+}
 
 run_test "codex dry-run uses read-only sandbox defaults" test_codex_defaults
 run_test "gemini dry-run uses plan approval defaults" test_gemini_defaults
@@ -530,6 +663,9 @@ run_test "claude dry-run uses plan permission defaults" test_claude_defaults
 run_test "opencode dry-run uses plan agent defaults" test_opencode_defaults
 run_test "pi dry-run uses tool allowlist and discovery hardening" test_pi_defaults
 run_test "qoder dry-run uses plan permission defaults" test_qoder_defaults
+run_test "agy dry-run uses plan mode and the headless read-tools note" test_agy_defaults
+run_test "agy maps json, model, resume and rejects --session-id" test_agy_option_mapping
+run_test "agy raw prompts may begin with '-' but not '/'" test_agy_raw_prompt_guard
 run_test "qoder resolves json, model, and prompt ordering" test_qoder_json_and_model
 run_test "pi forwards --model to the pi CLI" test_pi_model_forwarding
 run_test "prompt framing carries a hedged reachability note unless --raw" test_prompt_framing_reachability_note
@@ -555,5 +691,9 @@ run_test "opencode titles are unique per run" test_opencode_titles_are_unique
 run_test "opencode run forwards termination to the backend" test_opencode_forwards_termination
 run_test "opencode escalates a second signal to SIGKILL" test_opencode_escalates_to_kill_on_second_signal
 run_test "qoder resume latest and id mappings" test_resume_latest_and_id_mapping_qoder
+run_test "agy fresh run reports its conversation id on stderr only" test_agy_fresh_reports_session_id
+run_test "agy capture preserves exit status and fails soft to unknown" test_agy_capture_preserves_exit_and_fails_soft
+run_test "agy resume by id reports the known id" test_agy_resume_reports_known_id
+run_test "agy refuses a live run when --help no longer lists plan mode" test_agy_refuses_without_plan_mode
 
 printf '%s wrapper checks passed\n' "$PASS_COUNT"

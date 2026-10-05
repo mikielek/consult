@@ -10,7 +10,9 @@ Delete its `scripts/backends/<name>.sh` — `scripts/consult.sh --list` discover
 from that directory, so it disappears from the dispatcher immediately. Then clean up the
 documentation touchpoints: delete `references/<name>-cli.md`, remove its row from the discovery
 Parity table in `references/model-discovery.md`, and (if it was a named trigger) remove it from the
-backend name lists / frontmatter trigger in `SKILL.md` and update `evals/evals.json`.
+backend name lists / frontmatter trigger in `SKILL.md` and update `evals/evals.json`. Also clear
+the other backend lists named under "Add a backend" (README, INSTALL, `consult.sh` usage, AGENTS,
+test stub loop).
 
 ## Add a backend
 
@@ -51,7 +53,9 @@ An adapter:
    `require_prompt`. A positional argument whose first token begins with `-` is parsed as a backend
    option, so `--raw` would otherwise hand a caller a route to the capability-shaping flags that
    the missing `--` passthrough exists to block. Backends that bind the prompt to an option value
-   (Gemini's `-p PROMPT`) do not need it. Prefer this rejection over emitting a real `--`: these
+   (Gemini's and agy's `-p PROMPT`) do not need the `-` guard, but still guard any leading
+   character the CLI expands inside the value — agy runs a leading `/` as a slash command, so
+   `agy.sh` guards `/` alone. Prefer this rejection over emitting a real `--`: these
    CLIs disagree about the delimiter — `qoder --help` misreports its own mode choices, and
    `opencode --` was observed re-quoting the token into the Bun argv instead of honoring it.
 5. Hands the command to `run_or_print "${cmd[@]}"`, which prints it under `--dry-run` or `exec`s it
@@ -80,28 +84,76 @@ Right before `run_or_print` (or `run_capture_status`) it must:
    - the backend accepts a caller-chosen id: map `--session-id` (Gemini, Claude, Qoder, Pi);
    - the backend prints its own id natively (Codex: `session id:` in the stderr banner);
    - otherwise resolve it after a fresh run and print `consult-session: <id>` (or `unknown`) on
-     stderr, as `opencode.sh` does with a unique `--title` and `run_capture_status`.
+     stderr, as `opencode.sh` does with a unique `--title` and `agy.sh` does with a per-run
+     `--log-file`, both through `run_capture_status`.
 
 Stdout stays the backend's output in all cases, and the id line is stderr-only. Cover the new backend in
 `tests/wrapper.sh` (`test_resume_latest_warns_on_every_backend` loops over the backend list;
 `test_known_session_ids_are_reported` needs the backend added to its stub loop) and record how the id
 is obtained in `references/<name>-cli.md`.
 
-The existing adapters are the canonical templates: `claude.sh`, `codex.sh`, `gemini.sh`,
+The existing adapters are the canonical templates: `agy.sh`, `claude.sh`, `codex.sh`, `gemini.sh`,
 `opencode.sh`, `pi.sh`, `qoder.sh`. Record observed CLI behavior, tested flags, and caveats for the
 new backend in a `references/<name>-cli.md`, **including a "Model discovery" section** (its
 auth-signal command, any native model-listing command, and the safe wrapper probe `consult.sh --to
 <name> --model M --prompt "hi"`) **and a "Read scope" snapshot** (see "Re-measuring read scope"
 below). Add **one row** to the discovery Parity table in `references/model-discovery.md`.
 Update the backend name lists / frontmatter trigger in `SKILL.md` and `evals/evals.json` only if the
-backend should be a named trigger.
+backend should be a named trigger. Other lists that name every backend: `README.md` (intro and
+`--json` note), `INSTALL.md` (backend CLIs), `scripts/consult.sh` usage (`--json` and `--raw` notes),
+the `guard_positional_prompt` caller list in `AGENTS.md`, and the `for bin in ...` stub loop at the
+top of `tests/wrapper.sh`. Keep the backend's `SKILL.md` footprint to an intent sentence plus list
+entries: `SKILL.md` is loaded on every trigger, so per-case detail (exit codes, stderr strings)
+belongs in `references/<name>-cli.md`.
 
 When a backend's `--help` and its argument parser disagree, trust the parser and record the
 disagreement. `qoder --help` omits `plan` from the `--permission-mode` choices the binary actually
 accepts, so an adapter authored from help text alone would have missed the mode that makes the
 backend read-only. Force the discrepancy into the open by passing a value you know is invalid — the
-resulting "Invalid values" error echoes the real choice set (`--output-format bogus` is safe: the
-parser rejects it before any model call).
+resulting "Invalid values" error echoes the real choice set. This is only safe when the parser
+rejects the value before any model call, as qoder's does. agy accepted `--output-format bogus`
+silently and only warned on `--mode bogus`, so both probes ran the prompt live. Always pair an
+invalid-value probe with a harmless prompt (`-p "x"`).
+
+## Probing a new CLI (checklist)
+
+Easy probes pass while real use fails: on agy, "reply OK" and "read a heading" succeeded while
+real reviews came back empty 0/9. Measure each item, record it with version and date in
+`references/<name>-cli.md`, and run long live probes in the background (a real review took 4–6
+minutes on agy).
+
+1. **Read the changelog first** (`<cli> changelog`, release notes). agy's listed the headless exit
+   code 3, the `AGY_ERROR` line and the unlimited print timeout before any probe ran.
+2. **Bad safety-flag values.** Pass an invalid value to the read-only mode or permission flag. Does
+   the CLI reject it, or warn and continue without the protection? If it continues, add a
+   preflight that refuses to run (`agy.sh` checks `--help` for `plan`).
+3. **Test the exact final command.** Flags can cancel each other: `--disable-slash-commands`
+   silently turned off agy's `--mode plan`. Run the safety probes (write in-tree and in `/tmp`,
+   run a shell command) with the exact command the adapter builds, and read stderr for warnings.
+4. **What a mode really does.** A mode's name is not its behavior. agy's `plan` tries to write a
+   plan document, so the write is denied and the turn ends.
+5. **First-character handling.** Send `-`, `@`, `/` and `!` prompts with `--raw`. Guard every
+   prefix the CLI treats specially, whether the prompt is positional or an option value.
+6. **A realistic consultation, at least 3 times.** Use a real review prompt through the wrapper.
+   Treat empty stdout with exit 0 as a failure, and check whether denied tools end the turn.
+   Backend-specific steering belongs in the adapter, not `compose_prompt`.
+7. **stdout and stderr separation, and exit codes for each failure.** Check unknown model, listed
+   but unreachable model, missing auth, and a model error mid-turn. A host's fallback rules depend
+   on telling these apart.
+8. **Where the session id comes from.** Check, in order: a caller-chosen id flag, an id the CLI
+   prints, a JSON field, a per-run `--log-file`, a session-listing command. Before scraping a log,
+   confirm it holds no prompt or response text, and keep the lookup fail-soft (`unknown`).
+9. **What repo config the CLI loads.** Check `.agents/`, `.<cli>/`, hooks, plugins and MCP. Anything
+   it loads extends the trust boundary in `SKILL.md`.
+
+### Preferring a backend for a model family
+
+The "model names are not backends" rule in `SKILL.md` allows one documented exception at a time.
+For a preferred route (for example "Gemini" prefers `--to agy`): make it a stated preference in
+`SKILL.md`, never a wrapper alias. Keep the original `--to <name>` meaning. Have the host say which
+adapter answered. Allow fallback only for setup failures that happen before a session exists, and
+list those cases in the reference. Probe the fallback backend too: on 2026-10-05 Gemini CLI failed
+with a 403 license error, so the fallback route was dead on this machine.
 
 Discovery itself is a documented **manual** workflow (`references/model-discovery.md`), not a scripted
 adapter capability — there is no `discover_models()` hook to implement.

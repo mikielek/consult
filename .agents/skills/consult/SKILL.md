@@ -1,6 +1,6 @@
 ---
 name: consult
-description: Bring in another coding agent as an independent second opinion. Use when the user explicitly asks to ask, consult, cross-check, debate with, or get a second opinion from another agent/model, including named backends such as Gemini, OpenCode, Claude, Codex, Pi, Qoder, or an added backend. Here Pi means the Pi backend, not the number π or Raspberry Pi hardware; and names like GPT, OpenAI, Sonnet, Opus, or Qwen name a model or provider, not a backend (resolve them to a model on a chosen backend). Also use for clearly high-risk independent review where another model is materially needed for safety, security, architecture, or regression risk. Do not trigger for ordinary review, debugging, or brainstorming unless external-agent help is requested. Treat responses as advice and verify claims locally before acting.
+description: Bring in another coding agent as an independent second opinion. Use when the user explicitly asks to ask, consult, cross-check, debate with, or get a second opinion from another agent/model, including named backends such as Gemini, Antigravity (agy), OpenCode, Claude, Codex, Pi, Qoder, or an added backend. Here Pi means the Pi backend, not the number π or Raspberry Pi hardware; and names like GPT, OpenAI, Sonnet, Opus, or Qwen name a model or provider, not a backend (resolve them to a model on a chosen backend). Also use for clearly high-risk independent review where another model is materially needed for safety, security, architecture, or regression risk. Do not trigger for ordinary review, debugging, or brainstorming unless external-agent help is requested. Treat responses as advice and verify claims locally before acting.
 license: Apache-2.0
 metadata:
   version: 1.0.0
@@ -42,9 +42,18 @@ skill set, so it is not an independent *vendor*. Use it for a second pass over t
 when the user wants genuinely different model family or provider assumptions, prefer another backend
 and say why.
 
+**Antigravity and Gemini intent.** "Ask Antigravity" or "agy" routes to `--to agy`. A Gemini or
+Gemini-model request that names no CLI also prefers `--to agy` when `--list` shows it installed,
+else `--to gemini`; an explicit "Gemini CLI" request stays on `--to gemini`. Tell the user which
+adapter answered. Fall back from agy to `gemini` only on a setup failure before any session exists,
+never mid-session or because an answer is weak; an empty agy answer is a failure, not "no
+findings". agy reviews can take minutes. Fallback cases and model-id caveats:
+`references/agy-cli.md`.
+
 **Model and provider names are not backends.** "GPT", "OpenAI", "Sonnet", "Opus", "Qwen", and similar
 are model or provider constraints, expressed with `--model` on a chosen backend (for example `--to pi
---model openai/gpt-4.1`). They never select a backend by themselves.
+--model openai/gpt-4.1`). They never select a backend by themselves, except for the Gemini preference
+above.
 
 **When the backend is unspecified or only a model/provider is named** (for example "consult GPT
 about this API"), run `--list` and ask which backend to use. Auto-picking the only installed backend
@@ -78,7 +87,8 @@ A backend may also load configuration from the repository under review, which is
 from the wrapper's own provenance. The Qoder adapter in particular isolates nothing, so a repo
 shipping `.qoder/settings*.json` hooks, plugins or MCP servers can have them run inside the
 consultation. Reviewing untrusted code on that backend means running the consult from a directory
-the repository does not control, or choosing a backend that does not read repo config.
+the repository does not control, or choosing a backend that does not read repo config. agy has the
+same exposure through the repo's `.agents/` skills, rules, agents and plugins.
 
 ## Run a consultation
 
@@ -111,8 +121,9 @@ ${CLAUDE_SKILL_DIR}/scripts/consult.sh --to gemini --json --prompt "Return a JSO
 The prompt may be passed with `--prompt` or as one positional argument. Use `--prompt` when the text
 starts with `-`. Use `--from`, `--model`, or `--raw` only when needed. There is no
 `--`/passthrough; only documented normalized flags are accepted. A `--raw` prompt additionally
-cannot start with `-` (or `@` on Pi) for backends that take the prompt positionally — drop `--raw` or
-reword it, since the framing keeps a composed prompt from ever beginning with a flag. See
+cannot start with `-` (or `@` on Pi) for backends that take the prompt positionally, nor with `/` on
+agy, which runs it as a slash command — drop `--raw` or reword it, since the framing keeps a
+composed prompt from ever beginning with a flag. See
 `${CLAUDE_SKILL_DIR}/scripts/consult.sh --help`.
 
 **Name only paths the backend can reach.** The backend inherits your shell's directory, so name
@@ -177,17 +188,17 @@ scope under review.
   other agent or person is using that backend in this project: parallel subagents, a second terminal
   or a teammate all break it silently, and you cannot observe that from inside one agent. `latest`
   resolves to the newest session for OpenCode (`--continue`), Pi (`--continue`), Claude
-  (`--continue`), Qoder (`-c`) and Codex (`resume --last`); Gemini passes it through as
+  (`--continue`), Qoder (`-c`), agy (`-c`) and Codex (`resume --last`); Gemini passes it through as
   `--resume latest`.
 - Every backend warns on stderr when given `--resume latest`, and prints `consult-session: <id>` on
   stderr when the id is already known.
 - Prefer a caller-chosen id where the backend takes one: Gemini, Claude and Qoder accept
   `--session-id <uuid>`, and Pi accepts `--session-id <id>` (its only way to get a resumable session,
   since fresh Pi runs use `--no-session`).
-- OpenCode and Codex assign their own ids. OpenCode reports its id as a `consult-session: <id>` line
-  on **stderr** after a fresh run (stdout stays the review text); capture it from round 1 and pass it
-  to `--resume`. It reads `consult-session: unknown` if the lookup failed. Codex prints
-  `session id: <uuid>` in its stderr banner.
+- OpenCode, agy and Codex assign their own ids. OpenCode and agy report the id as a
+  `consult-session: <id>` line on **stderr** after a fresh run (stdout stays the review text);
+  capture it from round 1 and pass it to `--resume`. It reads `consult-session: unknown` if the
+  lookup failed. Codex prints `session id: <uuid>` in its stderr banner.
 - Note a persistent session id in your working notes when later rounds will need it. If the task
   changes materially, start a new session or ask whether to continue.
 
@@ -197,7 +208,7 @@ scope under review.
 > focus the terminal, press tab, or provide input to a running consult command.
 
 Consultations use mutation-restricted defaults; the strength varies by backend: **Codex** is
-OS-sandbox-enforced read-only, **Gemini, OpenCode, Claude, and Qoder** are approval/plan-gated
+OS-sandbox-enforced read-only, **Gemini, agy, OpenCode, Claude, and Qoder** are approval/plan-gated
 (effectively read-only headless, not a hard sandbox), and **Pi** is tool-allowlist and
 discovery-hardened (not an OS sandbox). Per-backend safety mechanisms are detailed in
 `references/<backend>-cli.md`.
@@ -225,5 +236,6 @@ escalated-execution and prefix-approval guidance in `references/codex-permission
 - Mention the consultation in your final answer when it materially influenced the result.
 
 Read the per-backend reference for CLI behavior, tested flags, and caveats:
-`references/gemini-cli.md`, `references/opencode-cli.md`, `references/claude-cli.md`,
-`references/codex-cli.md`, `references/pi-cli.md`, `references/qoder-cli.md`.
+`references/agy-cli.md`, `references/gemini-cli.md`, `references/opencode-cli.md`,
+`references/claude-cli.md`, `references/codex-cli.md`, `references/pi-cli.md`,
+`references/qoder-cli.md`.

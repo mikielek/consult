@@ -67,11 +67,12 @@ require_prompt() {
 # every argv position: a leading '-' is read as a backend flag, so `--raw --prompt
 # "--some-backend-option"` would reintroduce exactly the flag injection that the absent
 # '--' passthrough exists to prevent. Pi additionally treats a leading '@' as a file
-# include. Composed prompts always start with the reviewer framing, so --raw is the only
-# route to such a value; backends that pass the prompt as an option value (gemini -p) do
-# not need this. Deliberately a rejection rather than a '--' delimiter: --help and the
-# parsers disagree across these CLIs, and opencode was observed re-quoting '--' into the
-# Bun argv rather than honouring it.
+# include, and agy runs a leading '/' as a slash command even though its prompt is an
+# option value. Composed prompts always start with the reviewer framing, so --raw is the
+# only route to such a value; backends that pass the prompt as an option value (gemini -p,
+# agy -p) do not need the '-' guard. Deliberately a rejection rather than a '--'
+# delimiter: --help and the parsers disagree across these CLIs, and opencode was observed
+# re-quoting '--' into the Bun argv rather than honouring it.
 guard_positional_prompt() {
   local callee="$1"
   shift
@@ -80,7 +81,7 @@ guard_positional_prompt() {
   for lead in "$@"; do
     case "$PROMPT" in
       "$lead"*)
-        die "a --raw prompt cannot begin with '$lead' for $callee; the CLI would parse it as a flag or include rather than prompt text - drop --raw or reword the prompt"
+        die "a --raw prompt cannot begin with '$lead' for $callee; the CLI would parse it as a flag, include or command rather than prompt text - drop --raw or reword the prompt"
         ;;
     esac
   done

@@ -99,8 +99,8 @@ export CONSULT_TRUSTED_PATH="$HOME/.agents/skills/consult/scripts/consult.sh"
   symlink, and it reported a skill-name conflict when this repo also carried a project copy. Pi has no
   skills *directory* — it takes `--skill <path>` — and the consult adapter passes `--no-skills`, so a
   consultation never loads skills either way; do not create `~/.pi/skills`.
-- **Backend CLIs**: each backend needs its CLI installed and authenticated (`gemini`, `opencode`,
-  `claude`, `codex`, `pi`, `qoder`). `consult.sh --list` only reports whether a CLI is on `PATH` —
+- **Backend CLIs**: each backend needs its CLI installed and authenticated (`gemini`, `agy`,
+  `opencode`, `claude`, `codex`, `pi`, `qoder`). `consult.sh --list` only reports whether a CLI is on `PATH` —
   not whether it is authenticated or which models it can actually run; see
   `references/model-discovery.md` for the on-demand auth/model checks. Add a backend by dropping
   `scripts/backends/<name>.sh`; remove one by deleting the file. See

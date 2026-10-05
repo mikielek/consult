@@ -7,8 +7,8 @@
       "input": "Ask Gemini to review this change critically and return only actionable risks.",
       "expected": {
         "should_trigger": true,
-        "backend": "gemini",
-        "reason": "The user explicitly asks for a named external agent."
+        "backend": "agy",
+        "reason": "The user explicitly asks for a named external agent. A Gemini request with no CLI named prefers the agy backend (Antigravity CLI) when installed, falls back to --to gemini otherwise, and the host says which adapter answered."
       }
     },
     {
@@ -57,12 +57,30 @@
       }
     },
     {
+      "id": "trigger_explicit_antigravity",
+      "input": "Ask Antigravity to cross-check this migration plan for risks.",
+      "expected": {
+        "should_trigger": true,
+        "backend": "agy",
+        "reason": "\"Antigravity\" names the Antigravity CLI backend, so it routes to --to agy."
+      }
+    },
+    {
+      "id": "trigger_explicit_gemini_cli",
+      "input": "Use the Gemini CLI, not Antigravity, to review this diff.",
+      "expected": {
+        "should_trigger": true,
+        "backend": "gemini",
+        "reason": "An explicit Gemini CLI request stays on --to gemini; the agy preference applies only when no CLI is named."
+      }
+    },
+    {
       "id": "trigger_multi_agent_debate",
       "input": "Have Gemini and Pi discuss this architecture for two rounds, then synthesize the tradeoffs.",
       "expected": {
         "should_trigger": true,
         "backend": "multiple",
-        "reason": "The user asks for multi-agent consultation and continuity."
+        "reason": "The user asks for multi-agent consultation and continuity. The Gemini side prefers --to agy when installed; agy sessions resume by the consult-session id."
       }
     },
     {
@@ -156,8 +174,8 @@
       "input": "Ask Gemini to review my Raspberry Pi GPIO code.",
       "expected": {
         "should_trigger": true,
-        "backend": "gemini",
-        "reason": "The explicit named-agent request (Gemini) triggers; \"Raspberry Pi\" is hardware context and must not be read as the pi backend."
+        "backend": "agy",
+        "reason": "The explicit named-agent request (Gemini) triggers; \"Raspberry Pi\" is hardware context and must not be read as the pi backend. The Gemini request prefers --to agy when installed, else --to gemini."
       }
     },
     {
@@ -216,7 +234,7 @@
       "id": "output_prompt_framing",
       "input": "Ask Gemini to review the retry logic in src/client.ts for edge cases.",
       "checks": [
-        "Uses consult.sh with --to gemini rather than invoking gemini directly.",
+        "Uses consult.sh with --to agy (Gemini requests prefer agy when --list shows it installed, else --to gemini) rather than invoking agy or gemini directly.",
         "Frames a concrete goal, relevant context, and requested return shape.",
         "Keeps the advisory do-not-edit framing unless --raw is explicitly justified.",
         "Does not add raw backend passthrough flags."
@@ -294,6 +312,17 @@
         "Runs the wrapper normally without requesting redundant require_escalated or a prefix approval.",
         "Preserves the wrapper's Claude plan-mode and advisory safety defaults rather than bypassing backend permissions.",
         "Does not alter the wrapper, adapter, credential storage, or global Codex configuration to run the consultation."
+      ]
+    },
+    {
+      "id": "output_gemini_prefers_agy_with_narrow_fallback",
+      "input": "Ask Gemini to review the retry logic in src/client.ts.",
+      "checks": [
+        "Runs consult.sh --list and routes to --to agy when agy is installed, otherwise --to gemini.",
+        "Tells the user which adapter (agy or gemini) answered and why.",
+        "Falls back to --to gemini only for a setup or availability failure (agy missing or unauthenticated, an unknown --model, or an empty answer whose stderr reports an auto-denied permission after one tighter retry), never mid-session or because the answer is weak.",
+        "Does not carry an agy model id such as gemini-3.1-pro-high to the gemini backend without checking, and asks before dropping a rejected --model.",
+        "Treats an empty agy answer as a failed consultation, not as \"no findings\"."
       ]
     }
   ]

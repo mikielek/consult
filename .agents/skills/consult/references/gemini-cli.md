@@ -1,6 +1,12 @@
 # Gemini CLI Notes
 
 Used by the `gemini` backend adapter (`scripts/backends/gemini.sh`).
+
+Since 2026-10-05, Gemini requests that do not name a CLI prefer the `agy` backend (Antigravity CLI,
+see `agy-cli.md`). This backend is the fallback, and the route for an explicit Gemini CLI request.
+On that date this machine's Gemini CLI `0.59.0` failed every prompt with
+`403 PERMISSION_DENIED … SUBSCRIPTION_REQUIRED` ("You do not have a valid license of this product").
+That is an account entitlement, not a CLI defect, but it means the fallback can fail too.
 Observed in a workspace on 2026-06-12 with Gemini CLI `0.46.0`; rechecked on
 2026-06-18 with Gemini CLI `0.47.0`.
 
